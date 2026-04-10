@@ -141,20 +141,69 @@ function TenantsTab() {
 
 // ─── Users Tab ───────────────────────────────────────────────────────────────
 function UsersTab() {
-  const { data: users, loading } = useAdminFetch<any[]>('/users');
+  const { accessToken } = useSelector((s: RootState) => s.auth);
+  const { data: users, loading, setData } = useAdminFetch<any[]>('/users');
+  const [editUser, setEditUser] = useState<any>(null);
+  const [newRole, setNewRole] = useState<number>(2);
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  async function handleRoleSave() {
+    if (!editUser) return;
+    setSaving(true);
+    const res = await fetch(`${API_BASE}/users/${editUser.id}/role`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify(newRole),
+    });
+    setSaving(false);
+    if (res.ok) {
+      setMsg('Rolle aktualisiert');
+      setData((prev: any) => (prev ?? []).map((u: any) => u.id === editUser.id ? { ...u, role: newRole } : u));
+      setEditUser(null);
+    } else {
+      setMsg('Fehler beim Speichern');
+    }
+  }
+
+  const roleLabels = ['Admin', 'Supervisor', 'Lager', 'ReadOnly'];
+  const roleColors = ['1', '2', '8', '6'];
+
   if (loading) return <BusyIndicator active />;
   return (
-    <Table columns={<><TableColumn>Identity</TableColumn><TableColumn>SAP-User</TableColumn><TableColumn>Rolle</TableColumn><TableColumn>Sprache</TableColumn><TableColumn>Lager</TableColumn></>}>
-      {(users ?? []).map((u: any) => (
-        <TableRow key={u.id}>
-          <TableCell>{u.identityId}</TableCell>
-          <TableCell>{u.sapUsername}</TableCell>
-          <TableCell><Badge colorScheme={u.role === 0 ? '1' : u.role === 1 ? '2' : '6'}>{['Admin', 'Supervisor', 'Lager', 'ReadOnly'][u.role] ?? u.role}</Badge></TableCell>
-          <TableCell>{u.language}</TableCell>
-          <TableCell>{u.chosenWarehouseCode ?? '-'}</TableCell>
-        </TableRow>
-      ))}
-    </Table>
+    <div>
+      {msg && <MessageStrip design="Information" onClose={() => setMsg(null)}>{msg}</MessageStrip>}
+      <Table columns={<><TableColumn>Identity</TableColumn><TableColumn>SAP-User</TableColumn><TableColumn>Rolle</TableColumn><TableColumn>Sprache</TableColumn><TableColumn>Lager</TableColumn><TableColumn /></>}>
+        {(users ?? []).map((u: any) => (
+          <TableRow key={u.id}>
+            <TableCell>{u.identityId}</TableCell>
+            <TableCell>{u.sapUsername ?? <em style={{ color: 'var(--sapNeutralColor)' }}>nicht gesetzt</em>}</TableCell>
+            <TableCell>
+              <Badge colorScheme={roleColors[u.role] ?? '6'}>{roleLabels[u.role] ?? u.role}</Badge>
+            </TableCell>
+            <TableCell>{u.language}</TableCell>
+            <TableCell>{u.chosenWarehouseCode ?? '-'}</TableCell>
+            <TableCell>
+              <Button design="Transparent" icon="edit" onClick={() => { setEditUser(u); setNewRole(u.role); }}>
+                Rolle
+              </Button>
+            </TableCell>
+          </TableRow>
+        ))}
+      </Table>
+
+      <Dialog open={!!editUser} headerText={`Rolle ändern – ${editUser?.identityId}`}
+        footer={<Bar endContent={<><Button design="Emphasized" onClick={handleRoleSave} disabled={saving}>Speichern</Button><Button onClick={() => setEditUser(null)}>Abbrechen</Button></>} />}>
+        <div style={{ padding: '1rem' }}>
+          <Label>Neue Rolle</Label>
+          <Select onChange={(e: any) => setNewRole(Number(e.detail.selectedOption.value))} style={{ width: '100%', marginTop: '0.25rem' }}>
+            {roleLabels.map((label, idx) => (
+              <Option key={idx} value={String(idx)} selected={idx === newRole}>{label}</Option>
+            ))}
+          </Select>
+        </div>
+      </Dialog>
+    </div>
   );
 }
 

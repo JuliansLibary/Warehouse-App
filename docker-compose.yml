@@ -1,14 +1,28 @@
 version: '3.9'
 
+# ─── Volumes ────────────────────────────────────────────────────────────────────
+volumes:
+  pgdata:
+    driver: local
+  kcdata:
+    driver: local
+
+# ─── Networks ───────────────────────────────────────────────────────────────────
+networks:
+  warehouse-net:
+    driver: bridge
+
 services:
-  # ─── PostgreSQL ─────────────────────────────────────────────────────────────
+
+  # ─── PostgreSQL ───────────────────────────────────────────────────────────────
   postgres:
     image: postgres:16-alpine
     container_name: warehouse_postgres
     restart: unless-stopped
+    networks: [warehouse-net]
     environment:
-      POSTGRES_DB: warehousedb
-      POSTGRES_USER: warehouse
+      POSTGRES_DB:       warehousedb
+      POSTGRES_USER:     warehouse
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-warehouse_secret}
     volumes:
       - pgdata:/var/lib/postgresql/data
@@ -20,46 +34,86 @@ services:
       timeout: 5s
       retries: 5
 
-  # ─── ASP.NET Core Backend ───────────────────────────────────────────────────
+  # ─── Keycloak (identity provider) ────────────────────────────────────────────
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0
+    container_name: warehouse_keycloak
+    restart: unless-stopped
+    networks: [warehouse-net]
+    command: start-dev
+    environment:
+      KC_DB:                     postgres
+      KC_DB_URL:                 jdbc:postgresql://postgres:5432/keycloakdb
+      KC_DB_USERNAME:            warehouse
+      KC_DB_PASSWORD:            ${POSTGRES_PASSWORD:-warehouse_secret}
+      KC_HOSTNAME:               ${KC_HOSTNAME:-localhost}
+      KC_HOSTNAME_PORT:          ${KC_HOSTNAME_PORT:-8443}
+      KC_HOSTNAME_STRICT:        "false"
+      KC_HOSTNAME_STRICT_HTTPS:  "false"
+      KC_HTTP_ENABLED:           "true"
+      KC_HTTP_PORT:              8180
+      KC_HEALTH_ENABLED:         "true"
+      KEYCLOAK_ADMIN:            ${KC_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD:   ${KC_ADMIN_PASSWORD:-admin}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8180:8180"   # HTTP (internal / dev)
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8180/health/ready || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+
+  # ─── ASP.NET Core Backend ─────────────────────────────────────────────────────
   backend:
     build:
       context: ./backend
       dockerfile: WarehouseApp.API/Dockerfile
     container_name: warehouse_backend
     restart: unless-stopped
+    networks: [warehouse-net]
     depends_on:
       postgres:
         condition: service_healthy
+      keycloak:
+        condition: service_healthy
     environment:
-      ASPNETCORE_ENVIRONMENT: Production
-      ASPNETCORE_URLS: http://+:8080
+      ASPNETCORE_ENVIRONMENT:               Production
+      ASPNETCORE_URLS:                      http://+:8080
       ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=warehousedb;Username=warehouse;Password=${POSTGRES_PASSWORD:-warehouse_secret}"
-      Keycloak__Authority: ${KEYCLOAK_AUTHORITY:-http://keycloak:8080/realms/warehouse}
-      Keycloak__Audience: warehouse-app
-      Cors__AllowedOrigins: ${CORS_ORIGINS:-https://localhost}
+      Keycloak__Authority:                  ${KEYCLOAK_AUTHORITY:-http://keycloak:8180/realms/warehouse}
+      Keycloak__Audience:                   warehouse-app
+      Cors__AllowedOrigins__0:              https://localhost
+      Cors__AllowedOrigins__1:              ${CORS_EXTRA_ORIGIN:-http://localhost:3000}
     ports:
       - "5000:8080"
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8080/health || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 30s
 
-  # ─── React Frontend ─────────────────────────────────────────────────────────
+  # ─── React Frontend (static files served by nginx) ────────────────────────────
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
     container_name: warehouse_frontend
     restart: unless-stopped
+    networks: [warehouse-net]
     depends_on:
       - backend
 
-  # ─── Nginx Gateway ──────────────────────────────────────────────────────────
+  # ─── Nginx Gateway (SSL termination + reverse proxy) ─────────────────────────
   nginx:
     image: nginx:1.27-alpine
     container_name: warehouse_nginx
     restart: unless-stopped
+    networks: [warehouse-net]
     depends_on:
       - frontend
       - backend
@@ -74,7 +128,3 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-
-volumes:
-  pgdata:
-    driver: local

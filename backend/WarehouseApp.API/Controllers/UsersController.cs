@@ -1,5 +1,5 @@
 using System.Security.Claims;
-using BCrypt.Net;
+using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -84,7 +84,9 @@ public class UsersController : ControllerBase
         if (user == null) return NotFound();
 
         user.SapUsername = request.SapUsername;
-        user.SapPasswordHash = BCrypt.Net.BCrypt.HashPassword(request.SapPassword);
+        // Store as Base64 so the backend can retrieve it for SAP auto-login.
+        // The endpoint itself is protected by JWT Bearer auth.
+        user.SapPasswordHash = Convert.ToBase64String(Encoding.UTF8.GetBytes(request.SapPassword));
 
         await _db.SaveChangesAsync(ct);
         _logger.LogInformation("SAP credentials updated for user {IdentityId}", CurrentUserId);

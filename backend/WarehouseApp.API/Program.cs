@@ -61,12 +61,33 @@ try
 
     var app = builder.Build();
 
-    // Auto-migrate on startup
+    // Bootstrap database on startup.
+    // MigrateAsync applies pending EF migrations if they exist.
+    // EnsureCreatedAsync creates all tables from the model if no migrations are present
+    // (first deployment or dev environment without migration files).
     using (var scope = app.Services.CreateScope())
     {
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        await db.Database.MigrateAsync();
-        Log.Information("Database migrated successfully");
+        try
+        {
+            var pendingMigrations = (await db.Database.GetPendingMigrationsAsync()).ToList();
+            if (pendingMigrations.Count > 0)
+            {
+                await db.Database.MigrateAsync();
+                Log.Information("Applied {Count} pending migration(s)", pendingMigrations.Count);
+            }
+            else
+            {
+                // No migrations found – create schema directly from EF model
+                await db.Database.EnsureCreatedAsync();
+                Log.Information("Database schema ensured (EnsureCreated)");
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex, "Migration failed, attempting EnsureCreated as fallback");
+            await db.Database.EnsureCreatedAsync();
+        }
     }
 
     // Pipeline

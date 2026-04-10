@@ -1,5 +1,5 @@
 using System.Security.Claims;
-using BCrypt.Net;
+using System.Text;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -13,6 +13,7 @@ namespace WarehouseApp.API.Controllers;
 /// <summary>
 /// SAP Service Layer proxy controller.
 /// All warehouse modules route their SAP calls through this controller.
+/// Supports auto-login: if no session exists, uses stored SAP credentials to login automatically.
 /// </summary>
 [ApiController]
 [Route("api/sap")]
@@ -37,7 +38,7 @@ public class SapController : ControllerBase
         ?? User.FindFirstValue(ClaimTypes.NameIdentifier)
         ?? "unknown";
 
-    /// <summary>Login to SAP Service Layer and store session.</summary>
+    /// <summary>Explicit login to SAP Service Layer (e.g. after credentials change).</summary>
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] CheckSapCredentialsRequest request,
         [FromHeader(Name = "X-Instance-Id")] long instanceId, CancellationToken ct)
@@ -51,7 +52,6 @@ public class SapController : ControllerBase
         if (!result.Success)
             return Unauthorized(new { message = result.ErrorMessage });
 
-        // Store session for subsequent requests
         if (result.SessionToken != null)
             _sessionService.StoreSession(CurrentUserId, instanceId, result.SessionToken);
 
@@ -89,14 +89,13 @@ public class SapController : ControllerBase
         var client = _sapFactory.Create(instance);
         var result = await client.LoginAsync(userName, password, database, ct);
 
-        // Immediately logout if using Cookie mode
         if (result.Success && result.SessionToken != null)
             await client.LogoutAsync(result.SessionToken, ct);
 
         return Ok(new SapCredentialsCheckResult(result.Success, result.ErrorMessage));
     }
 
-    /// <summary>Generic GET proxy to SAP Service Layer.</summary>
+    /// <summary>Generic GET proxy to SAP Service Layer. Auto-logins if no session.</summary>
     [HttpGet("query")]
     public async Task<IActionResult> Query([FromQuery] string endpoint,
         [FromHeader(Name = "X-Instance-Id")] long instanceId, CancellationToken ct)
@@ -109,42 +108,84 @@ public class SapController : ControllerBase
         return Ok(result.Data);
     }
 
-    /// <summary>Generic POST proxy to SAP Service Layer.</summary>
+    /// <summary>
+    /// Generic POST proxy to SAP Service Layer.
+    /// Body: { "endpoint": "...", "body": {...} }
+    /// </summary>
     [HttpPost("post")]
-    public async Task<IActionResult> Post([FromQuery] string endpoint, [FromBody] object body,
+    public async Task<IActionResult> Post([FromBody] SapProxyRequest request,
         [FromHeader(Name = "X-Instance-Id")] long instanceId, CancellationToken ct)
     {
         var (client, sessionToken, error) = await GetClientAndSession(instanceId, ct);
         if (error != null) return StatusCode(401, error);
 
-        var result = await client!.PostAsync<object>(endpoint, body, sessionToken, ct);
+        var result = await client!.PostAsync<object>(request.Endpoint, request.Body, sessionToken, ct);
         if (!result.Success) return StatusCode(result.StatusCode, new { message = result.ErrorMessage });
         return Ok(result.Data);
     }
 
-    /// <summary>Generic PATCH proxy to SAP Service Layer.</summary>
-    [HttpPatch("patch")]
-    public async Task<IActionResult> Patch([FromQuery] string endpoint, [FromBody] object body,
+    /// <summary>
+    /// Generic PATCH proxy to SAP Service Layer.
+    /// Body: { "endpoint": "...", "body": {...} }
+    /// </summary>
+    [HttpPost("patch")]
+    public async Task<IActionResult> Patch([FromBody] SapProxyRequest request,
         [FromHeader(Name = "X-Instance-Id")] long instanceId, CancellationToken ct)
     {
         var (client, sessionToken, error) = await GetClientAndSession(instanceId, ct);
         if (error != null) return StatusCode(401, error);
 
-        var result = await client!.PatchAsync<object>(endpoint, body, sessionToken, ct);
+        var result = await client!.PatchAsync<object>(request.Endpoint, request.Body, sessionToken, ct);
         if (!result.Success) return StatusCode(result.StatusCode, new { message = result.ErrorMessage });
         return result.StatusCode == 204 ? NoContent() : Ok(result.Data);
     }
 
+    // ─── Helpers ─────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Gets SAP client + session token for the current user.
+    /// Auto-logins using stored credentials if no active session exists.
+    /// </summary>
     private async Task<(Domain.Interfaces.ISapServiceLayerClient? Client, string? SessionToken, object? Error)>
         GetClientAndSession(long instanceId, CancellationToken ct)
     {
-        var instance = await _db.Instances.FindAsync(new object[] { instanceId }, ct);
+        var instance = await _db.Instances
+            .Include(i => i.Tenants)
+            .FirstOrDefaultAsync(i => i.Id == instanceId, ct);
         if (instance == null) return (null, null, new { message = "Instance not found" });
 
+        var client = _sapFactory.Create(instance);
         var sessionToken = _sessionService.GetSession(CurrentUserId, instanceId);
-        if (sessionToken == null)
-            return (null, null, new { message = "No SAP session. Please login first." });
 
-        return (_sapFactory.Create(instance), sessionToken, null);
+        if (sessionToken == null)
+        {
+            // Auto-login using stored SAP credentials
+            var user = await _db.Users.FirstOrDefaultAsync(u => u.IdentityId == CurrentUserId, ct);
+            if (user?.SapUsername == null || user.SapPasswordHash == null)
+                return (null, null, new { message = "No SAP credentials configured. Please set your SAP credentials in your profile." });
+
+            // Decode the stored SAP password (Base64-encoded)
+            string sapPassword;
+            try { sapPassword = Encoding.UTF8.GetString(Convert.FromBase64String(user.SapPasswordHash)); }
+            catch { return (null, null, new { message = "Invalid stored SAP credentials. Please update your profile." }); }
+
+            var tenant = instance.Tenants.FirstOrDefault();
+            var companyDb = tenant?.CompanyDb ?? "";
+
+            var loginResult = await client.LoginAsync(user.SapUsername, sapPassword, companyDb, ct);
+            if (!loginResult.Success)
+                return (null, null, new { message = $"SAP auto-login failed: {loginResult.ErrorMessage}" });
+
+            if (loginResult.SessionToken != null)
+                _sessionService.StoreSession(CurrentUserId, instanceId, loginResult.SessionToken);
+
+            sessionToken = loginResult.SessionToken ?? "basic-auth";
+            _logger.LogInformation("SAP auto-login successful for user {UserId} on instance {InstanceId}", CurrentUserId, instanceId);
+        }
+
+        return (client, sessionToken, null);
     }
 }
+
+/// <summary>Request body for POST/PATCH SAP proxy calls.</summary>
+public record SapProxyRequest(string Endpoint, object Body);

@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import {
   Title, Toolbar, ToolbarSpacer, Button, Label, Input, Select, Option,
-  MessageStrip, TabContainer, Tab, Text,
+  MessageStrip, Text,
 } from '@ui5/webcomponents-react';
 import { RootState } from '../../app/store';
 import { API_BASE } from '../../shared/services/api';
@@ -72,17 +72,20 @@ export function LabelGeneratorPage() {
   const [message, setMessage] = useState<{ text: string; type: 'Positive' | 'Negative' | 'Information' } | null>(null);
   const [copies, setCopies] = useState(1);
 
-  // Load printers
-  useState(() => {
+  // Load printers on mount / when tenant changes
+  useEffect(() => {
     if (!accessToken || !selectedTenantId) return;
     fetch(`${API_BASE}/printers?tenantId=${selectedTenantId}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
-    }).then(r => r.json()).then(data => {
-      setPrinters(data ?? []);
-      const def = data?.find((p: any) => p.isDefault);
-      if (def) setSelectedPrinter(def.url);
-    }).catch(() => {});
-  });
+    })
+      .then(r => r.json())
+      .then(data => {
+        setPrinters(data ?? []);
+        const def = (data ?? []).find((p: any) => p.isDefault);
+        if (def) setSelectedPrinter(def.url);
+      })
+      .catch(() => {});
+  }, [accessToken, selectedTenantId]);
 
   function getLabelHtml(): string {
     switch (labelType) {
