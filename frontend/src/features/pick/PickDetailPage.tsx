@@ -50,7 +50,7 @@ export function PickDetailPage() {
     if (pickList) {
       // Try to restore from cache first
       loadCache().then(cached => {
-        setPickState(cached ? JSON.parse(cached.ContentJson) : pickList);
+        setPickState(cached ? JSON.parse(cached.contentJson) : pickList);
       });
     }
   }, [pickList]);

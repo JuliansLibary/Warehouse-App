@@ -4,11 +4,11 @@ import { RootState } from '../../app/store';
 import { API_BASE } from '../services/api';
 
 interface CacheEntry {
-  Id: number;
-  DocumentNumber: number;
-  Module: string;
-  ContentJson: string;
-  UpdatedAt: string;
+  id: number;
+  documentNumber: number;
+  module: string;
+  contentJson: string;
+  updatedAt: string;
 }
 
 export function useDocumentCache(documentNumber: number, module: string, tenantId: number) {

@@ -57,10 +57,10 @@ export function OfflineBanner() {
             'X-Instance-Id': String(selectedInstanceId),
           },
           body: JSON.stringify({
-            Module: action.module,
-            ActionType: action.actionType,
-            SapEndpoint: action.sapEndpoint,
-            PayloadJson: action.payloadJson,
+            module: action.module,
+            actionType: action.actionType,
+            sapEndpoint: action.sapEndpoint,
+            payloadJson: action.payloadJson,
           }),
         });
 
