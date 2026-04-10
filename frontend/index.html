@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!--
+      Viewport for Zebra TC21 and tablets:
+      - width=device-width keeps layout correct on 5.5" screens
+      - initial-scale=1 prevents iOS Safari from auto-zooming
+      - viewport-fit=cover handles notch/safe-area on newer devices
+    -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+    <!-- PWA / App capabilities -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Warehouse App" />
+    <meta name="theme-color" content="#0a6ed1" />
+
+    <!-- Prevent phone number / date detection on scanner devices -->
+    <meta name="format-detection" content="telephone=no, date=no, address=no, email=no" />
+
+    <title>Warehouse App</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

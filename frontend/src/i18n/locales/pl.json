@@ -1,0 +1,310 @@
+{
+  "common": {
+    "save": "Zapisz",
+    "cancel": "Anuluj",
+    "delete": "Usuń",
+    "edit": "Edytuj",
+    "new": "Nowy",
+    "refresh": "Odśwież",
+    "loading": "Ładowanie...",
+    "error": "Błąd",
+    "back": "Wstecz",
+    "close": "Zamknij",
+    "confirm": "Potwierdź",
+    "yes": "Tak",
+    "no": "Nie",
+    "search": "Szukaj",
+    "noData": "Brak danych",
+    "actions": "Akcje",
+    "status": "Status",
+    "name": "Nazwa",
+    "description": "Opis",
+    "date": "Data",
+    "quantity": "Ilość",
+    "print": "Drukuj",
+    "scan": "Skanuj",
+    "book": "Zaksięguj",
+    "copies": "Kopie",
+    "type": "Typ",
+    "language": "Język"
+  },
+  "nav": {
+    "launchpad": "Launchpad",
+    "pick": "Kompletacja",
+    "pack": "Pakowanie",
+    "inventoryCount": "Inwentaryzacja",
+    "inventoryTransfer": "Przesunięcie magazynowe",
+    "stockTransfer": "Zamówienie przesunięcia",
+    "purchaseDelivery": "Przyjęcie towaru",
+    "purchaseDeliveryAdhoc": "Przyjęcie Adhoc",
+    "salesDelivery": "Wydanie towaru",
+    "labelGenerator": "Etykiety",
+    "infoPoint": "InfoPoint",
+    "admin": "Admin"
+  },
+  "auth": {
+    "login": "Zaloguj",
+    "logout": "Wyloguj",
+    "username": "Nazwa użytkownika",
+    "password": "Hasło",
+    "loginWithKeycloak": "Zaloguj przez Keycloak",
+    "loginError": "Błąd logowania",
+    "loggedInAs": "Zalogowany jako"
+  },
+  "offline": {
+    "offlineMode": "Tryb offline",
+    "offlineMessage": "Jesteś offline. Twoje dane zostaną zapisane i automatycznie zsynchronizowane po powrocie do sieci.",
+    "syncInProgress": "Synchronizacja... ({{count}} akcji oczekuje)",
+    "syncErrors": "{{count}} akcja/akcji nie mogła zostać zsynchronizowana.",
+    "savedOffline": "Zapisano offline – zostanie zsynchronizowane po powrocie do sieci"
+  },
+  "pick": {
+    "title": "Kompletacja",
+    "pickList": "Lista kompletacyjna",
+    "scanArticle": "Skanuj artykuł:",
+    "scanPlaceholder": "Skanuj lub wpisz kod kreskowy / numer artykułu",
+    "articleNotFound": "Artykuł \"{{code}}\" nie znaleziony na liście",
+    "fullyPicked": "✓ {{code}} w pełni skompletowany",
+    "remaining": "{{code}}: pozostało {{count}} szt.",
+    "saved": "Lista kompletacyjna zapisana",
+    "saveError": "Błąd zapisu: {{error}}",
+    "loading": "Ładowanie listy kompletacyjnej...",
+    "columns": {
+      "item": "Artykuł",
+      "description": "Opis",
+      "location": "Lokalizacja",
+      "open": "Do skompletowania",
+      "picked": "Skompletowane",
+      "status": "Status"
+    },
+    "status": {
+      "done": "Gotowe",
+      "open": "Otwarte"
+    },
+    "serialNumbers": "Numery seryjne",
+    "addSerial": "Dodaj numer seryjny",
+    "serialPlaceholder": "Wpisz lub zeskanuj numer seryjny",
+    "serialConfirm": "Akceptuj {{count}} numer(ów) seryjnych"
+  },
+  "pack": {
+    "title": "Pakowanie",
+    "pickList": "Lista kompletacyjna",
+    "package": "Paczka",
+    "nve": "NVE",
+    "generateNve": "Generuj NVE",
+    "addPackage": "Dodaj paczkę",
+    "book": "Zaksięguj wydanie towaru",
+    "scanArticle": "Skanuj artykuł:",
+    "articleNotFound": "Artykuł nie znaleziony",
+    "loading": "Ładowanie listy kompletacyjnej..."
+  },
+  "inventory": {
+    "title": "Inwentaryzacja",
+    "openCounts": "Otwarte zliczenia",
+    "counting": "Zliczanie",
+    "itemCode": "Artykuł",
+    "counted": "Zliczone",
+    "book": "Zaksięguj inwentaryzację",
+    "loading": "Ładowanie inwentaryzacji...",
+    "saved": "Inwentaryzacja zaksięgowana pomyślnie",
+    "saveError": "Błąd księgowania: {{error}}"
+  },
+  "inventoryTransfer": {
+    "title": "Przesunięcie magazynowe",
+    "sourceWarehouse": "Magazyn źródłowy",
+    "targetWarehouse": "Magazyn docelowy",
+    "scanItem": "Skanuj artykuł",
+    "transfer": "Zaksięguj przesunięcie",
+    "loading": "Ładowanie zamówień przesunięcia..."
+  },
+  "stockTransfer": {
+    "title": "Zamówienie przesunięcia",
+    "new": "Nowe przesunięcie",
+    "fromWarehouse": "Z magazynu",
+    "toWarehouse": "Do magazynu",
+    "create": "Utwórz"
+  },
+  "purchaseDelivery": {
+    "title": "Przyjęcie towaru",
+    "purchaseOrder": "Zamówienie zakupu",
+    "orderNo": "Nr zamówienia",
+    "supplier": "Dostawca",
+    "positions": "Pozycje",
+    "bookReceipt": "Zaksięguj przyjęcie",
+    "loading": "Ładowanie zamówienia...",
+    "ordersLoading": "Ładowanie zamówień...",
+    "noOrders": "Brak otwartych zamówień zakupu",
+    "scanArticle": "Skanuj artykuł:",
+    "deliveryImage": "Zdjęcie dokumentu dostawy (opcjonalne):",
+    "imageUploading": "Przesyłanie zdjęcia...",
+    "booked": "Przyjęcie towaru zaksięgowane pomyślnie",
+    "bookError": "Błąd: {{error}}",
+    "ordered": "Zamówione",
+    "received": "Przyjęte",
+    "batch": "Partia",
+    "batches": "Partie",
+    "addBatch": "Dodaj partię"
+  },
+  "salesDelivery": {
+    "title": "Wydanie towaru",
+    "order": "Zamówienie",
+    "orderNo": "Nr zamówienia",
+    "customer": "Klient",
+    "open": "Otwarte",
+    "createDelivery": "Utwórz dostawę",
+    "loading": "Ładowanie zamówienia...",
+    "ordersLoading": "Ładowanie zamówień...",
+    "noOrders": "Brak otwartych zamówień",
+    "signature": "Podpis",
+    "signaturePod": "Podpis (POD)",
+    "signHere": "Proszę podpisać tutaj:",
+    "clearSignature": "Wyczyść",
+    "booked": "Dostawa utworzona pomyślnie",
+    "bookError": "Błąd: {{error}}",
+    "ordered": "Zamówione",
+    "toDeliver": "Do dostarczenia",
+    "warehouse": "Magazyn"
+  },
+  "labelGenerator": {
+    "title": "Generator etykiet",
+    "labelType": "Typ etykiety",
+    "standard": "Artykuł standardowy",
+    "nve": "NVE / SSCC-18",
+    "qr": "Kod QR",
+    "warehouseLabel": "Lokalizacja magazynu",
+    "printer": "Drukarka",
+    "noPrinters": "Brak skonfigurowanych drukarek – dostępny druk w przeglądarce",
+    "browserPrint": "Druk w przeglądarce",
+    "printerPrint": "Drukarka",
+    "choosePrinter": "-- Wybierz drukarkę --",
+    "preview": "Podgląd",
+    "printed": "Wydrukowano {{count}} etykiet(ę)",
+    "printError": "Błąd drukowania – sprawdź połączenie z drukarką",
+    "choosePrinterFirst": "Proszę wybrać drukarkę",
+    "fields": {
+      "itemCode": "Numer artykułu",
+      "itemDescription": "Opis",
+      "quantity": "Ilość",
+      "batchNumber": "Numer partii",
+      "serialNumber": "Numer seryjny",
+      "warehouseCode": "Kod magazynu",
+      "binCode": "Lokalizacja (Bin)",
+      "nve": "NVE (18 cyfr)",
+      "custom": "Treść własna"
+    }
+  },
+  "infoPoint": {
+    "title": "InfoPoint",
+    "search": "Szukaj artykułu lub lokalizacji...",
+    "searchButton": "Szukaj",
+    "itemInfo": "Informacje o artykule",
+    "binInfo": "Informacje o lokalizacji",
+    "stock": "Stan magazynowy",
+    "serialNumbers": "Numery seryjne",
+    "batches": "Partie"
+  },
+  "admin": {
+    "title": "Administracja",
+    "tabs": {
+      "instances": "Instancje",
+      "tenants": "Najemcy",
+      "users": "Użytkownicy",
+      "groups": "Grupy",
+      "printers": "Drukarki",
+      "masterData": "Dane główne",
+      "labelTemplates": "Szablony etykiet",
+      "modules": "Moduły",
+      "offlineSync": "Sync offline",
+      "logs": "Logi",
+      "sql": "Narzędzie SQL"
+    },
+    "instances": {
+      "create": "Utwórz instancję",
+      "created": "Instancja utworzona",
+      "url": "SL URL",
+      "port": "SL Port",
+      "baseUrl": "Base URL",
+      "clientId": "Client ID",
+      "clientSecret": "Client Secret",
+      "authMode": "Tryb uwierzytelniania",
+      "cookie": "Cookie (B1SESSION)",
+      "basicAuth": "Basic Auth"
+    },
+    "tenants": {
+      "create": "Utwórz najemcę",
+      "created": "Najemca utworzony",
+      "database": "Baza danych",
+      "instance": "Instancja",
+      "validated": "Zwalidowany",
+      "pending": "Oczekujący"
+    },
+    "users": {
+      "role": "Rola",
+      "roleUpdated": "Rola zaktualizowana",
+      "roleUpdateError": "Błąd zapisu",
+      "roles": {
+        "admin": "Admin",
+        "supervisor": "Supervisor",
+        "warehouse": "Magazyn",
+        "readonly": "Tylko odczyt",
+        "installationAdmin": "Admin instalacji",
+        "instanceAdmin": "Admin instancji",
+        "tenantAdmin": "Admin najemcy"
+      }
+    },
+    "groups": {
+      "title": "Grupy i uprawnienia",
+      "create": "Utwórz grupę",
+      "created": "Grupa utworzona",
+      "groupName": "Nazwa grupy",
+      "permissions": "Uprawnienia",
+      "members": "Członkowie",
+      "addMember": "Dodaj członka",
+      "module": "Moduł",
+      "canView": "Podgląd",
+      "canEdit": "Edycja",
+      "canBook": "Księgowanie",
+      "noGroups": "Brak grup"
+    },
+    "masterData": {
+      "syncItems": "Synchronizuj artykuły",
+      "syncWarehouses": "Synchronizuj magazyny",
+      "syncBP": "Synchronizuj partnerów biznesowych",
+      "syncAll": "Synchronizuj wszystko",
+      "syncSuccess": "{{type}} zsynchronizowany pomyślnie ({{count}} rekordów)",
+      "syncError": "Błąd synchronizacji: {{error}}"
+    },
+    "logs": {
+      "refresh": "Odśwież",
+      "lines": "Wiersze",
+      "analysis": "Analiza logów",
+      "totalErrors": "Łącznie błędów",
+      "totalWarnings": "Łącznie ostrzeżeń",
+      "topModules": "Najczęstsze moduły",
+      "latestErrors": "Ostatnie błędy"
+    },
+    "sync": {
+      "pending": "Oczekujące",
+      "processAll": "Przetwórz wszystko",
+      "status": {
+        "pending": "Oczekujące",
+        "syncing": "Synchronizowanie",
+        "done": "Gotowe",
+        "failed": "Błąd"
+      }
+    }
+  },
+  "errors": {
+    "generic": "Wystąpił nieoczekiwany błąd.",
+    "networkError": "Błąd sieci – sprawdź połączenie.",
+    "notFound": "Żądany zasób nie został znaleziony.",
+    "unauthorized": "Nie masz uprawnień do wykonania tej akcji.",
+    "sessionExpired": "Sesja wygasła. Zaloguj się ponownie.",
+    "boundary": {
+      "title": "Coś poszło nie tak",
+      "message": "W tym module wystąpił błąd. Pozostałe moduły są nadal dostępne.",
+      "reload": "Przeładuj",
+      "details": "Szczegóły błędu"
+    }
+  }
+}

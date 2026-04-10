@@ -1,0 +1,31 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# Development override – uses your own external Keycloak instead of the
+# dockerised one.  Run with:
+#
+#   docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+#
+# This overlay:
+#   - Disables the internal Keycloak container via the "disabled" profile
+#     (Docker Compose ignores profile-gated services AND their dependants'
+#      health-conditions automatically)
+#   - Overrides the backend's Keycloak authority to point to your host machine
+#     via host.docker.internal (works on Docker Desktop; use the host IP on
+#     Linux if host.docker.internal is not routed)
+# ──────────────────────────────────────────────────────────────────────────────
+
+services:
+
+  # ─── Disable internal Keycloak ───────────────────────────────────────────────
+  keycloak:
+    profiles:
+      - disabled   # not started unless you pass --profile disabled explicitly
+
+  # ─── Backend – point to external Keycloak on host machine ────────────────────
+  backend:
+    # Remove the keycloak health-check dependency; only wait for postgres.
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      Keycloak__Authority: "http://host.docker.internal:8080/realms/warehouse"

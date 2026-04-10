@@ -1,0 +1,39 @@
+# ── Node / Frontend ───────────────────────────────────────────────────────────
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/.env.local
+frontend/.env.*.local
+
+# ── .NET / Backend ────────────────────────────────────────────────────────────
+bin/
+obj/
+*.user
+backend/**/bin/
+backend/**/obj/
+
+# ── Environment / Secrets ─────────────────────────────────────────────────────
+.env
+.env.local
+.env.production
+# .env.development is intentionally tracked (no secrets, just localhost defaults)
+
+# ── Docker ────────────────────────────────────────────────────────────────────
+nginx/certs/*.key
+nginx/certs/*.crt
+nginx/certs/*.pem
+
+# ── IDE / OS ──────────────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.DS_Store
+Thumbs.db
+
+# ── Logs ──────────────────────────────────────────────────────────────────────
+*.log
+backend/WarehouseApp.API/logs/
+
+# ── Test results ──────────────────────────────────────────────────────────────
+TestResults/
+coverage/
