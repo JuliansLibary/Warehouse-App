@@ -1,0 +1,45 @@
+/* SAP Fiori Horizon Theme – global resets for Warehouse App */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: '72', '72full', Arial, Helvetica, sans-serif;
+  font-size: 0.875rem;
+  background: var(--sapBackgroundColor, #f5f6f7);
+  color: var(--sapTextColor, #32363a);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Remove default focus outlines in favour of SAP-style focus ring */
+:focus-visible {
+  outline: var(--sapContent_FocusWidth, 2px) dashed var(--sapContent_FocusColor, #0a6ed1);
+  outline-offset: 2px;
+}
+
+/* Scrollbars – thin, SAP-coloured */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--sapScrollBar_FaceColor, #949494);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-track {
+  background: var(--sapScrollBar_TrackColor, #e9eaeb);
+}
