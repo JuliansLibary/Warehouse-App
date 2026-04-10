@@ -6,6 +6,8 @@ volumes:
     driver: local
   kcdata:
     driver: local
+  certs:
+    driver: local
 
 # ─── Networks ───────────────────────────────────────────────────────────────────
 networks:
@@ -13,6 +15,31 @@ networks:
     driver: bridge
 
 services:
+
+  # ─── SSL Certificate Generator (runs once, exits) ────────────────────────────
+  cert-init:
+    image: alpine/openssl:latest
+    container_name: warehouse_cert_init
+    networks: [warehouse-net]
+    volumes:
+      - certs:/certs
+    entrypoint: >
+      sh -c "
+        if [ ! -f /certs/server.crt ]; then
+          echo 'Generating self-signed SSL certificate...';
+          openssl req -x509 -nodes -newkey rsa:2048
+            -keyout /certs/server.key
+            -out    /certs/server.crt
+            -days   3650
+            -subj   '/CN=localhost/O=Warehouse App/C=DE'
+            -addext 'subjectAltName=DNS:localhost,IP:127.0.0.1';
+          chmod 644 /certs/server.crt /certs/server.key;
+          echo 'Certificate generated successfully.';
+        else
+          echo 'Certificate already exists, skipping generation.';
+        fi
+      "
+    restart: "no"
 
   # ─── PostgreSQL ───────────────────────────────────────────────────────────────
   postgres:
@@ -26,6 +53,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-warehouse_secret}
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     ports:
       - "5432:5432"
     healthcheck:
@@ -33,6 +61,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
 
   # ─── Keycloak (identity provider) ────────────────────────────────────────────
   keycloak:
@@ -40,14 +69,15 @@ services:
     container_name: warehouse_keycloak
     restart: unless-stopped
     networks: [warehouse-net]
-    command: start-dev
+    command: >
+      start-dev
+      --import-realm
     environment:
       KC_DB:                     postgres
       KC_DB_URL:                 jdbc:postgresql://postgres:5432/keycloakdb
       KC_DB_USERNAME:            warehouse
       KC_DB_PASSWORD:            ${POSTGRES_PASSWORD:-warehouse_secret}
       KC_HOSTNAME:               ${KC_HOSTNAME:-localhost}
-      KC_HOSTNAME_PORT:          ${KC_HOSTNAME_PORT:-8443}
       KC_HOSTNAME_STRICT:        "false"
       KC_HOSTNAME_STRICT_HTTPS:  "false"
       KC_HTTP_ENABLED:           "true"
@@ -55,17 +85,20 @@ services:
       KC_HEALTH_ENABLED:         "true"
       KEYCLOAK_ADMIN:            ${KC_ADMIN:-admin}
       KEYCLOAK_ADMIN_PASSWORD:   ${KC_ADMIN_PASSWORD:-admin}
+    volumes:
+      - kcdata:/opt/keycloak/data
+      - ./keycloak:/opt/keycloak/data/import:ro
     depends_on:
       postgres:
         condition: service_healthy
     ports:
-      - "8180:8180"   # HTTP (internal / dev)
+      - "8180:8180"
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8180/health/ready || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8180/health/ready 2>/dev/null | grep -q '\"status\":\"UP\"' || exit 1"]
       interval: 30s
-      timeout: 10s
-      retries: 10
-      start_period: 60s
+      timeout: 15s
+      retries: 12
+      start_period: 90s
 
   # ─── ASP.NET Core Backend ─────────────────────────────────────────────────────
   backend:
@@ -84,24 +117,30 @@ services:
       ASPNETCORE_ENVIRONMENT:               Production
       ASPNETCORE_URLS:                      http://+:8080
       ConnectionStrings__DefaultConnection: "Host=postgres;Port=5432;Database=warehousedb;Username=warehouse;Password=${POSTGRES_PASSWORD:-warehouse_secret}"
-      Keycloak__Authority:                  ${KEYCLOAK_AUTHORITY:-http://keycloak:8180/realms/warehouse}
-      Keycloak__Audience:                   warehouse-app
-      Cors__AllowedOrigins__0:              https://localhost
-      Cors__AllowedOrigins__1:              ${CORS_EXTRA_ORIGIN:-http://localhost:3000}
+      Keycloak__Authority:                  "http://keycloak:8180/realms/warehouse"
+      Keycloak__Audience:                   "warehouse-app"
+      Cors__AllowedOrigins__0:              "https://localhost"
+      Cors__AllowedOrigins__1:              "http://localhost"
+      Cors__AllowedOrigins__2:              "${CORS_EXTRA_ORIGIN:-https://localhost}"
     ports:
       - "5000:8080"
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8080/health || exit 1"]
       interval: 30s
       timeout: 10s
-      retries: 3
-      start_period: 30s
+      retries: 5
+      start_period: 40s
 
   # ─── React Frontend (static files served by nginx) ────────────────────────────
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        VITE_KEYCLOAK_URL:    "${VITE_KEYCLOAK_URL:-/auth}"
+        VITE_KEYCLOAK_REALM:  "${VITE_KEYCLOAK_REALM:-warehouse}"
+        VITE_KEYCLOAK_CLIENT: "${VITE_KEYCLOAK_CLIENT:-warehouse-app}"
+        VITE_API_URL:         "${VITE_API_URL:-/api}"
     container_name: warehouse_frontend
     restart: unless-stopped
     networks: [warehouse-net]
@@ -115,16 +154,21 @@ services:
     restart: unless-stopped
     networks: [warehouse-net]
     depends_on:
-      - frontend
-      - backend
+      cert-init:
+        condition: service_completed_successfully
+      frontend:
+        condition: service_started
+      backend:
+        condition: service_started
     ports:
       - "80:80"
       - "443:443"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/certs:/etc/nginx/certs:ro
+      - certs:/etc/nginx/certs:ro
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost/health 2>/dev/null || nginx -t"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost/health 2>/dev/null | grep -q OK || nginx -t"]
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 10s
