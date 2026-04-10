@@ -178,14 +178,14 @@ export function LaunchpadPage() {
             >
               {tenants.map(t => (
                 <StandardListItem
-                  key={t.Id}
-                  data-tenant-id={t.Id}
-                  data-tenant-name={t.Name}
-                  data-instance-id={t.InstanceId}
-                  description={t.CompanyDb}
-                  selected={t.Id === selectedTenantId}
+                  key={t.id}
+                  data-tenant-id={t.id}
+                  data-tenant-name={t.name}
+                  data-instance-id={t.instanceId}
+                  description={t.companyDb}
+                  selected={t.id === selectedTenantId}
                 >
-                  {t.Name}
+                  {t.name}
                 </StandardListItem>
               ))}
             </List>

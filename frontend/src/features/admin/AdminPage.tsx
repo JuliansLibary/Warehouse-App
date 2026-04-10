@@ -465,7 +465,7 @@ const MODULE_LIST = [
   { name: 'PurchaseDelivery',       route: '/purchase-delivery',        label: 'Wareneingang (ref.)' },
   { name: 'PurchaseDeliveryAdhoc',  route: '/purchase-delivery-adhoc',  label: 'Wareneingang (Adhoc)' },
   { name: 'SalesDelivery',          route: '/sales-delivery',           label: 'Warenausgang' },
-  { name: 'LabelGenerator',         route: '/labels',                   label: 'Etikettendruck' },
+  { name: 'LabelGenerator',         route: '/label-generator',          label: 'Etikettendruck' },
   { name: 'InfoPoint',              route: '/info-point',               label: 'InfoPoint' },
 ];
 

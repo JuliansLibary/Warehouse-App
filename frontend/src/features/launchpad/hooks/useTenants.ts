@@ -4,12 +4,12 @@ import { RootState } from '../../../app/store';
 import { API_BASE } from '../../../shared/services/api';
 
 interface Tenant {
-  Id: number;
-  Name: string;
-  CompanyDb: string;
-  IsValidated: boolean;
-  InstanceId: number;
-  InstanceName: string;
+  id: number;
+  name: string;
+  companyDb: string;
+  isValidated: boolean;
+  instanceId: number;
+  instanceName: string;
 }
 
 export function useTenants() {
