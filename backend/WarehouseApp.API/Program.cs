@@ -27,7 +27,9 @@ try
     builder.Services.AddControllers()
         .AddJsonOptions(opts =>
         {
-            opts.JsonSerializerOptions.PropertyNamingPolicy = null;
+            // Use camelCase (ASP.NET Core default) so the React frontend can access
+            // properties as e.g. t.id, t.name, t.slUrl without extra mapping.
+            opts.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
             opts.JsonSerializerOptions.DefaultIgnoreCondition =
                 System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
         });

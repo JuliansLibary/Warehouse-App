@@ -369,7 +369,7 @@ function LabelTemplatesTab() {
     // Load full template (with HtmlContent)
     fetch(`${API_BASE}/label-templates/${t.id}`, { headers: { Authorization: `Bearer ${accessToken}` } })
       .then(r => r.json())
-      .then(d => { setForm({ name: d.Name, templateType: d.TemplateType, htmlContent: d.HtmlContent, isDefault: d.IsDefault }); setShowDialog(true); });
+      .then(d => { setForm({ name: d.name, templateType: d.templateType, htmlContent: d.htmlContent, isDefault: d.isDefault }); setShowDialog(true); });
   }
 
   async function handleSave() {
@@ -402,7 +402,7 @@ function LabelTemplatesTab() {
     });
     if (res.ok) {
       setData((prev: any) => (prev ?? []).map((x: any) =>
-        ({ ...x, IsDefault: x.id === t.id ? true : (x.TemplateType === t.TemplateType ? false : x.IsDefault) })
+        ({ ...x, isDefault: x.id === t.id ? true : (x.templateType === t.templateType ? false : x.isDefault) })
       ));
       setMsg('Standard gesetzt');
     }
@@ -426,9 +426,9 @@ function LabelTemplatesTab() {
       <Table columns={<><TableColumn>Name</TableColumn><TableColumn>Typ</TableColumn><TableColumn>Standard</TableColumn><TableColumn /></>}>
         {(templates ?? []).map((t: any) => (
           <TableRow key={t.id}>
-            <TableCell>{t.Name}</TableCell>
-            <TableCell><Badge colorScheme="2">{t.TemplateType}</Badge></TableCell>
-            <TableCell>{t.IsDefault ? <Badge colorScheme="8">Standard</Badge> : ''}</TableCell>
+            <TableCell>{t.name}</TableCell>
+            <TableCell><Badge colorScheme="2">{t.templateType}</Badge></TableCell>
+            <TableCell>{t.isDefault ? <Badge colorScheme="8">Standard</Badge> : ''}</TableCell>
             <TableCell>
               <Button design="Transparent" icon="edit" onClick={() => openEdit(t)} />
               <Button design="Transparent" icon="accept" onClick={() => handleSetDefault(t)} title="Als Standard setzen" />
@@ -477,8 +477,8 @@ function ModuleConfigTab() {
   const [msg, setMsg] = useState<string | null>(null);
 
   function isActive(moduleName: string) {
-    const cfg = (configs ?? []).find((c: any) => c.Module === moduleName);
-    return cfg ? cfg.IsActive : true; // default active if no config entry
+    const cfg = (configs ?? []).find((c: any) => c.module === moduleName);
+    return cfg ? cfg.isActive : true; // default active if no config entry
   }
 
   async function toggle(mod: { name: string; route: string; label: string }) {
@@ -488,14 +488,14 @@ function ModuleConfigTab() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
       body: JSON.stringify({
-        Module: mod.name,
-        ConfigJson: '{}',
-        Type: 'module',
-        Route: mod.route,
-        IsConfigurable: true,
-        IsActive: !current,
-        Icon: null,
-        TenantId: selectedTenantId,
+        module: mod.name,
+        configJson: '{}',
+        type: 'module',
+        route: mod.route,
+        isConfigurable: true,
+        isActive: !current,
+        icon: null,
+        tenantId: selectedTenantId,
       }),
     });
     setSaving(null);
