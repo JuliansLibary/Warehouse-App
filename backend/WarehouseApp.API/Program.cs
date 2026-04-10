@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using Serilog.Events;
+using WarehouseApp.API.BackgroundServices;
 using WarehouseApp.API.Extensions;
 using WarehouseApp.API.Middleware;
 using WarehouseApp.Infrastructure.Data;
@@ -61,6 +62,9 @@ try
     builder.Services.AddHealthChecks()
         .AddDbContextCheck<AppDbContext>();
 
+    // Background services
+    builder.Services.AddHostedService<OfflineSyncBackgroundService>();
+
     var app = builder.Build();
 
     // Bootstrap database on startup.
@@ -101,6 +105,7 @@ try
     app.UseAuthentication();
     app.UseAuthorization();
     app.UseMiddleware<TenantResolutionMiddleware>();
+    app.UseMiddleware<AuditLogMiddleware>();
 
     app.MapControllers();
     app.MapHealthChecks("/health");

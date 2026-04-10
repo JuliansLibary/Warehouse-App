@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux';
 import {
   Title, TabContainer, Tab, Table, TableColumn, TableRow, TableCell,
   Button, Input, Label, Dialog, Bar, MessageStrip, BusyIndicator,
-  Toolbar, ToolbarSpacer, Select, Option, TextArea, Badge,
+  Toolbar, ToolbarSpacer, Select, Option, TextArea, Badge, Text,
 } from '@ui5/webcomponents-react';
 import { RootState } from '../../app/store';
 import { API_BASE } from '../../shared/services/api';
@@ -547,6 +547,9 @@ function LogsTab() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lineCount, setLineCount] = useState(200);
+  const [filterLevel, setFilterLevel] = useState<'all' | 'error' | 'warn'>('all');
+  const [searchText, setSearchText] = useState('');
+  const [showAnalysis, setShowAnalysis] = useState(false);
 
   async function fetchLogs() {
     setLoading(true);
@@ -567,26 +570,251 @@ function LogsTab() {
 
   useEffect(() => { fetchLogs(); }, []);  // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Log analysis
+  const errorLines = lines.filter(l => /\[ERR|ERROR|Exception/i.test(l));
+  const warnLines = lines.filter(l => /\[WRN|WARN/i.test(l));
+  const moduleStats = lines.reduce<Record<string, number>>((acc, l) => {
+    const m = l.match(/\[(Pick|Pack|InventoryCount|InventoryTransfer|StockTransfer|PurchaseDelivery|SalesDelivery|LabelGenerator|InfoPoint|Admin|Sap)\]/i);
+    if (m) { acc[m[1]] = (acc[m[1]] ?? 0) + 1; }
+    return acc;
+  }, {});
+
+  const filteredLines = lines.filter(l => {
+    if (filterLevel === 'error' && !/\[ERR|ERROR/i.test(l)) return false;
+    if (filterLevel === 'warn' && !/\[WRN|WARN|ERR|ERROR/i.test(l)) return false;
+    if (searchText && !l.toLowerCase().includes(searchText.toLowerCase())) return false;
+    return true;
+  });
+
+  function lineColor(line: string): string {
+    if (/\[ERR|ERROR|Exception/i.test(line)) return 'var(--sapNegativeColor)';
+    if (/\[WRN|WARN/i.test(line)) return 'var(--sapCriticalColor)';
+    return 'inherit';
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', padding: '0.5rem' }}>
       <Toolbar>
-        <Label>Letzte Zeilen:</Label>
-        <Select style={{ marginLeft: '0.5rem', marginRight: '1rem' }}
+        <Label>Zeilen:</Label>
+        <Select style={{ marginLeft: '0.5rem' }}
           onChange={(e: any) => setLineCount(Number(e.detail.selectedOption.value))}>
           {[100, 200, 500, 1000].map(n => <Option key={n} value={String(n)} selected={n === lineCount}>{n}</Option>)}
         </Select>
+        <Label style={{ marginLeft: '1rem' }}>Filter:</Label>
+        <Select style={{ marginLeft: '0.5rem' }}
+          onChange={(e: any) => setFilterLevel(e.detail.selectedOption.value)}>
+          <Option value="all" selected={filterLevel === 'all'}>Alle</Option>
+          <Option value="warn" selected={filterLevel === 'warn'}>Fehler + Warnungen</Option>
+          <Option value="error" selected={filterLevel === 'error'}>Nur Fehler</Option>
+        </Select>
+        <Input
+          placeholder="Suchen..."
+          value={searchText}
+          onInput={(e: any) => setSearchText(e.target.value)}
+          style={{ marginLeft: '0.5rem', width: 180 }}
+        />
         <ToolbarSpacer />
+        <Button icon="bar-chart" design="Transparent" onClick={() => setShowAnalysis(s => !s)}>
+          {showAnalysis ? 'Log verbergen' : 'Auswertung'}
+        </Button>
         <Button icon="refresh" onClick={fetchLogs} disabled={loading}>Aktualisieren</Button>
       </Toolbar>
-      {error && <MessageStrip design="Negative">{error}</MessageStrip>}
-      {loading ? <BusyIndicator active /> : (
-        <TextArea
-          value={lines.join('\n')}
-          rows={30}
-          readonly
-          style={{ width: '100%', fontFamily: 'monospace', fontSize: '0.78rem' }}
-        />
+
+      {/* Log Analysis Panel */}
+      {showAnalysis && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '0.75rem', padding: '0.75rem', background: 'var(--sapNeutralBackground)', borderRadius: '0.25rem' }}>
+          <div style={{ textAlign: 'center', padding: '0.5rem', border: '1px solid var(--sapNegativeColor)', borderRadius: '0.25rem' }}>
+            <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--sapNegativeColor)' }}>{errorLines.length}</div>
+            <div style={{ fontSize: '0.8rem' }}>Fehler</div>
+          </div>
+          <div style={{ textAlign: 'center', padding: '0.5rem', border: '1px solid var(--sapCriticalColor)', borderRadius: '0.25rem' }}>
+            <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--sapCriticalColor)' }}>{warnLines.length}</div>
+            <div style={{ fontSize: '0.8rem' }}>Warnungen</div>
+          </div>
+          <div style={{ textAlign: 'center', padding: '0.5rem', border: '1px solid var(--sapPositiveColor)', borderRadius: '0.25rem' }}>
+            <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--sapPositiveColor)' }}>{lines.length - errorLines.length - warnLines.length}</div>
+            <div style={{ fontSize: '0.8rem' }}>Info/Debug</div>
+          </div>
+          <div style={{ gridColumn: '4', padding: '0.5rem', border: '1px solid var(--sapNeutralBorderColor)', borderRadius: '0.25rem' }}>
+            <div style={{ fontSize: '0.75rem', fontWeight: 'bold', marginBottom: '0.25rem' }}>Aktivste Module</div>
+            {Object.entries(moduleStats).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([m, c]) => (
+              <div key={m} style={{ fontSize: '0.75rem', display: 'flex', justifyContent: 'space-between' }}>
+                <span>{m}</span><Badge colorScheme="1">{c}</Badge>
+              </div>
+            ))}
+          </div>
+          {errorLines.length > 0 && (
+            <div style={{ gridColumn: '1/-1', padding: '0.5rem', background: 'var(--sapErrorBackground)', borderRadius: '0.25rem' }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--sapNegativeColor)', marginBottom: '0.25rem' }}>Letzte Fehler</div>
+              {errorLines.slice(-3).map((l, i) => (
+                <div key={i} style={{ fontFamily: 'monospace', fontSize: '0.72rem', color: 'var(--sapNegativeColor)', marginBottom: '0.2rem' }}>{l.slice(0, 200)}</div>
+              ))}
+            </div>
+          )}
+        </div>
       )}
+
+      {error && <MessageStrip design="Negative">{error}</MessageStrip>}
+
+      {loading ? <BusyIndicator active /> : (
+        <div style={{
+          height: 500, overflowY: 'auto',
+          fontFamily: 'monospace', fontSize: '0.78rem',
+          border: '1px solid var(--sapNeutralBorderColor)',
+          borderRadius: '0.25rem', padding: '0.5rem',
+          background: 'var(--sapBaseColor)',
+        }}>
+          {filteredLines.length === 0
+            ? <div style={{ color: 'var(--sapNeutralColor)', padding: '1rem', textAlign: 'center' }}>Keine Einträge</div>
+            : filteredLines.map((line, i) => (
+              <div key={i} style={{ color: lineColor(line), padding: '1px 0', borderBottom: '1px solid var(--sapList_BorderColor)', wordBreak: 'break-all' }}>
+                {line}
+              </div>
+            ))
+          }
+        </div>
+      )}
+
+      <div style={{ fontSize: '0.8rem', color: 'var(--sapNeutralColor)' }}>
+        {filteredLines.length} / {lines.length} Zeilen angezeigt
+      </div>
+    </div>
+  );
+}
+
+// ─── Analytics Tab ────────────────────────────────────────────────────────────
+function AnalyticsTab() {
+  const { accessToken } = useSelector((s: RootState) => s.auth);
+  const { selectedTenantId, selectedInstanceId } = useSelector((s: RootState) => s.tenant);
+  const [userPerf, setUserPerf] = useState<any[]>([]);
+  const [moduleUsage, setModuleUsage] = useState<any[]>([]);
+  const [dailyActivity, setDailyActivity] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [days, setDays] = useState(30);
+
+  const authHeaders = {
+    Authorization: `Bearer ${accessToken}`,
+    'X-Tenant-Id': String(selectedTenantId ?? ''),
+    'X-Instance-Id': String(selectedInstanceId ?? ''),
+  };
+
+  async function fetchAnalytics() {
+    if (!selectedTenantId) return;
+    setLoading(true);
+    try {
+      const [perfRes, moduleRes, dailyRes] = await Promise.all([
+        fetch(`${API_BASE}/analytics/user-performance`, { headers: authHeaders }),
+        fetch(`${API_BASE}/analytics/module-usage`, { headers: authHeaders }),
+        fetch(`${API_BASE}/analytics/daily-activity?days=${days}`, { headers: authHeaders }),
+      ]);
+      if (perfRes.ok) setUserPerf(await perfRes.json());
+      if (moduleRes.ok) setModuleUsage(await moduleRes.json());
+      if (dailyRes.ok) setDailyActivity(await dailyRes.json());
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => { fetchAnalytics(); }, [selectedTenantId, days]);  // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (loading) return <BusyIndicator active />;
+
+  const maxActions = Math.max(...userPerf.map(u => u.totalActions), 1);
+  const maxModuleActions = Math.max(...moduleUsage.map(m => m.totalActions), 1);
+  const maxDaily = Math.max(...dailyActivity.map(d => d.totalActions), 1);
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', padding: '0.5rem' }}>
+      <Toolbar>
+        <Title level="H5">Performance-Auswertung</Title>
+        <ToolbarSpacer />
+        <Label>Zeitraum:</Label>
+        <Select style={{ marginLeft: '0.5rem' }}
+          onChange={(e: any) => setDays(Number(e.detail.selectedOption.value))}>
+          {[7, 14, 30, 90].map(d => <Option key={d} value={String(d)} selected={d === days}>Letzte {d} Tage</Option>)}
+        </Select>
+        <Button icon="refresh" onClick={fetchAnalytics} style={{ marginLeft: '0.5rem' }}>Aktualisieren</Button>
+      </Toolbar>
+
+      {/* Daily Activity Chart (bar chart using CSS) */}
+      <div>
+        <Title level="H6">Tagesaktivität (letzte {days} Tage)</Title>
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: '2px', height: 100, padding: '0.5rem', background: 'var(--sapNeutralBackground)', borderRadius: '0.25rem', overflowX: 'auto' }}>
+          {dailyActivity.map((d: any, i) => (
+            <div key={i} title={`${d.date?.slice(0, 10)}: ${d.totalActions} Aktionen`} style={{
+              flex: '0 0 auto', width: 8,
+              height: `${Math.max(2, (d.totalActions / maxDaily) * 90)}%`,
+              background: d.errors > 0 ? 'var(--sapNegativeColor)' : 'var(--sapPositiveColor)',
+              borderRadius: '2px 2px 0 0',
+            }} />
+          ))}
+        </div>
+        <div style={{ fontSize: '0.75rem', color: 'var(--sapNeutralColor)', marginTop: '0.25rem' }}>
+          Grün = normal, Rot = Fehler vorhanden
+        </div>
+      </div>
+
+      {/* User Performance */}
+      <div>
+        <Title level="H6">Benutzer-Performance</Title>
+        {userPerf.length === 0
+          ? <Text style={{ color: 'var(--sapNeutralColor)' }}>Noch keine Aktivitätsdaten vorhanden</Text>
+          : (
+            <Table columns={<><TableColumn>Benutzer</TableColumn><TableColumn>Aktionen</TableColumn><TableColumn>Fehler</TableColumn><TableColumn>Letzte Aktivität</TableColumn><TableColumn>Module</TableColumn></>}>
+              {userPerf.map((u: any) => (
+                <TableRow key={u.userId}>
+                  <TableCell><strong>{u.userName}</strong></TableCell>
+                  <TableCell>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <div style={{ height: 8, width: `${(u.totalActions / maxActions) * 100}px`, maxWidth: 100, background: 'var(--sapPositiveColor)', borderRadius: 4 }} />
+                      {u.totalActions}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {u.errorCount > 0
+                      ? <Badge colorScheme="1">{u.errorCount}</Badge>
+                      : <Badge colorScheme="8">0</Badge>
+                    }
+                  </TableCell>
+                  <TableCell>{new Date(u.lastActivity).toLocaleString('de-DE')}</TableCell>
+                  <TableCell>
+                    <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
+                      {Object.entries(u.actionsByModule ?? {}).slice(0, 4).map(([m, c]: any) => (
+                        <Badge key={m} colorScheme="6">{m}: {c}</Badge>
+                      ))}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </Table>
+          )
+        }
+      </div>
+
+      {/* Module Usage */}
+      <div>
+        <Title level="H6">Modul-Nutzung</Title>
+        {moduleUsage.length === 0
+          ? <Text style={{ color: 'var(--sapNeutralColor)' }}>Noch keine Moduldaten vorhanden</Text>
+          : (
+            <Table columns={<><TableColumn>Modul</TableColumn><TableColumn>Aktionen</TableColumn><TableColumn>Aktive Nutzer</TableColumn><TableColumn>Fehler</TableColumn></>}>
+              {moduleUsage.map((m: any) => (
+                <TableRow key={m.module}>
+                  <TableCell><strong>{m.module}</strong></TableCell>
+                  <TableCell>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <div style={{ height: 8, width: `${(m.totalActions / maxModuleActions) * 100}px`, maxWidth: 100, background: 'var(--sapInformativeColor)', borderRadius: 4 }} />
+                      {m.totalActions}
+                    </div>
+                  </TableCell>
+                  <TableCell>{m.uniqueUsers}</TableCell>
+                  <TableCell>{m.errors > 0 ? <Badge colorScheme="1">{m.errors}</Badge> : <Badge colorScheme="8">0</Badge>}</TableCell>
+                </TableRow>
+              ))}
+            </Table>
+          )
+        }
+      </div>
     </div>
   );
 }
@@ -668,6 +896,210 @@ function MasterDataTab() {
   );
 }
 
+// ─── Groups & Permissions Tab ─────────────────────────────────────────────────
+const ALL_MODULES = ['Pick', 'Pack', 'InventoryCount', 'InventoryTransfer', 'StockTransfer', 'PurchaseDelivery', 'PurchaseDeliveryAdhoc', 'SalesDelivery', 'LabelGenerator', 'InfoPoint'];
+
+function GroupsTab() {
+  const { accessToken } = useSelector((s: RootState) => s.auth);
+  const { selectedTenantId, selectedInstanceId } = useSelector((s: RootState) => s.tenant);
+  const { data: groups, loading, setData } = useAdminFetch<any[]>('/groups', [selectedTenantId]);
+  const { data: users } = useAdminFetch<any[]>('/users');
+
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showPermDialog, setShowPermDialog] = useState<any>(null);
+  const [form, setForm] = useState({ name: '', description: '' });
+  const [perms, setPerms] = useState<Record<string, { canView: boolean; canEdit: boolean; canBook: boolean }>>({});
+  const [msg, setMsg] = useState<string | null>(null);
+
+  function openPermDialog(group: any) {
+    const permMap: Record<string, { canView: boolean; canEdit: boolean; canBook: boolean }> = {};
+    for (const m of ALL_MODULES) {
+      const existing = group.modulePermissions?.find((p: any) => p.module === m);
+      permMap[m] = existing
+        ? { canView: existing.canView, canEdit: existing.canEdit, canBook: existing.canBook }
+        : { canView: false, canEdit: false, canBook: false };
+    }
+    setPerms(permMap);
+    setShowPermDialog(group);
+  }
+
+  async function createGroup() {
+    const res = await fetch(`${API_BASE}/groups`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+        'X-Tenant-Id': String(selectedTenantId),
+        'X-Instance-Id': String(selectedInstanceId ?? ''),
+      },
+      body: JSON.stringify(form),
+    });
+    if (res.ok) {
+      const created = await res.json();
+      setData((prev: any) => [...(prev ?? []), created]);
+      setMsg('Gruppe erstellt');
+      setShowCreateDialog(false);
+      setForm({ name: '', description: '' });
+    } else {
+      setMsg('Fehler beim Erstellen');
+    }
+  }
+
+  async function savePermissions() {
+    if (!showPermDialog) return;
+    const permList = Object.entries(perms).map(([module, p]) => ({ module, ...p }));
+    await fetch(`${API_BASE}/groups/${showPermDialog.id}/permissions`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+        'X-Tenant-Id': String(selectedTenantId),
+        'X-Instance-Id': String(selectedInstanceId ?? ''),
+      },
+      body: JSON.stringify(permList),
+    });
+    setMsg('Berechtigungen gespeichert');
+    setShowPermDialog(null);
+  }
+
+  async function addMember(groupId: number, userId: number) {
+    await fetch(`${API_BASE}/groups/${groupId}/members`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+        'X-Tenant-Id': String(selectedTenantId),
+        'X-Instance-Id': String(selectedInstanceId ?? ''),
+      },
+      body: JSON.stringify({ userId }),
+    });
+    // Refresh groups
+    const res = await fetch(`${API_BASE}/groups`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'X-Tenant-Id': String(selectedTenantId ?? ''),
+        'X-Instance-Id': String(selectedInstanceId ?? ''),
+      },
+    });
+    if (res.ok) setData(await res.json());
+  }
+
+  async function deleteGroup(id: number) {
+    if (!confirm('Gruppe wirklich löschen?')) return;
+    await fetch(`${API_BASE}/groups/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    setData((prev: any) => (prev ?? []).filter((g: any) => g.id !== id));
+  }
+
+  if (loading) return <BusyIndicator active />;
+
+  return (
+    <div>
+      {msg && <MessageStrip design="Information" onClose={() => setMsg(null)}>{msg}</MessageStrip>}
+      <Toolbar>
+        <Title level="H5">Gruppen &amp; Berechtigungen</Title>
+        <ToolbarSpacer />
+        <Button icon="add" onClick={() => setShowCreateDialog(true)}>Gruppe erstellen</Button>
+      </Toolbar>
+
+      {(groups ?? []).length === 0 && (
+        <MessageStrip design="Information" hideCloseButton style={{ marginTop: '0.5rem' }}>
+          Keine Gruppen vorhanden. Erstellen Sie eine Gruppe um Benutzer mit individuellen Modulberechtigungen zu versehen.
+        </MessageStrip>
+      )}
+
+      {(groups ?? []).map((group: any) => (
+        <div key={group.id} style={{
+          marginTop: '1rem', border: '1px solid var(--sapNeutralBorderColor)',
+          borderRadius: '0.25rem', padding: '1rem',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+            <Title level="H6" style={{ flex: 1 }}>{group.name}</Title>
+            {group.description && <span style={{ color: 'var(--sapNeutralColor)', fontSize: '0.875rem' }}>{group.description}</span>}
+            <Button design="Transparent" icon="permission" onClick={() => openPermDialog(group)}>Berechtigungen</Button>
+            <Button design="Transparent" icon="delete" onClick={() => deleteGroup(group.id)} />
+          </div>
+
+          <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
+            {(group.modulePermissions ?? []).map((p: any) => (
+              <Badge key={p.module} colorScheme={p.canBook ? '8' : p.canEdit ? '2' : '6'}>
+                {p.module}: {p.canBook ? 'Buchen' : p.canEdit ? 'Bearbeiten' : 'Ansehen'}
+              </Badge>
+            ))}
+          </div>
+
+          <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap', alignItems: 'center' }}>
+            <Label>Mitglieder:</Label>
+            {(group.members ?? []).map((m: any) => (
+              <Badge key={m.userId} colorScheme="1">{m.displayName}</Badge>
+            ))}
+            <Select
+              style={{ minWidth: 150 }}
+              onChange={async (e: any) => {
+                const uid = Number(e.detail.selectedOption.value);
+                if (uid) await addMember(group.id, uid);
+              }}
+            >
+              <Option value="">+ Mitglied hinzufügen</Option>
+              {(users ?? [])
+                .filter((u: any) => !(group.members ?? []).some((m: any) => m.userId === u.id))
+                .map((u: any) => <Option key={u.id} value={String(u.id)}>{u.displayName}</Option>)
+              }
+            </Select>
+          </div>
+        </div>
+      ))}
+
+      {/* Create Dialog */}
+      <Dialog open={showCreateDialog} headerText="Gruppe erstellen"
+        footer={<Bar endContent={<><Button design="Emphasized" onClick={createGroup}>Erstellen</Button><Button onClick={() => setShowCreateDialog(false)}>Abbrechen</Button></>} />}>
+        <div style={{ padding: '1rem', minWidth: 320, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          <Label>Name</Label>
+          <Input value={form.name} onInput={(e: any) => setForm(p => ({ ...p, name: e.target.value }))} placeholder="z.B. Buchhaltung" />
+          <Label>Beschreibung</Label>
+          <Input value={form.description} onInput={(e: any) => setForm(p => ({ ...p, description: e.target.value }))} placeholder="Optional" />
+        </div>
+      </Dialog>
+
+      {/* Permissions Dialog */}
+      {showPermDialog && (
+        <Dialog open headerText={`Berechtigungen – ${showPermDialog.name}`}
+          footer={<Bar endContent={<><Button design="Emphasized" onClick={savePermissions}>Speichern</Button><Button onClick={() => setShowPermDialog(null)}>Abbrechen</Button></>} />}>
+          <div style={{ padding: '1rem', minWidth: 480 }}>
+            <Table columns={<><TableColumn>Modul</TableColumn><TableColumn>Ansehen</TableColumn><TableColumn>Bearbeiten</TableColumn><TableColumn>Buchen</TableColumn></>}>
+              {ALL_MODULES.map(module => (
+                <TableRow key={module}>
+                  <TableCell><strong>{module}</strong></TableCell>
+                  <TableCell>
+                    <input type="checkbox"
+                      checked={perms[module]?.canView ?? false}
+                      onChange={e => setPerms(p => ({ ...p, [module]: { ...p[module], canView: e.target.checked } }))}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <input type="checkbox"
+                      checked={perms[module]?.canEdit ?? false}
+                      onChange={e => setPerms(p => ({ ...p, [module]: { ...p[module], canEdit: e.target.checked } }))}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <input type="checkbox"
+                      checked={perms[module]?.canBook ?? false}
+                      onChange={e => setPerms(p => ({ ...p, [module]: { ...p[module], canBook: e.target.checked } }))}
+                    />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </Table>
+          </div>
+        </Dialog>
+      )}
+    </div>
+  );
+}
+
 // ─── Main AdminPage ───────────────────────────────────────────────────────────
 export function AdminPage() {
   return (
@@ -677,11 +1109,13 @@ export function AdminPage() {
         <Tab text="Instanzen" icon="it-system" selected><InstancesTab /></Tab>
         <Tab text="Mandanten" icon="business-objects-experience"><TenantsTab /></Tab>
         <Tab text="Benutzer" icon="employee"><UsersTab /></Tab>
+        <Tab text="Gruppen" icon="group"><GroupsTab /></Tab>
         <Tab text="Drucker" icon="print"><PrintersTab /></Tab>
         <Tab text="Module" icon="grid"><ModuleConfigTab /></Tab>
         <Tab text="Label-Vorlagen" icon="print-2"><LabelTemplatesTab /></Tab>
         <Tab text="Stammdaten" icon="cloud-download"><MasterDataTab /></Tab>
         <Tab text="Offline-Sync" icon="synchronize"><SyncTab /></Tab>
+        <Tab text="Analytics" icon="bar-chart"><AnalyticsTab /></Tab>
         <Tab text="SQL-Tool" icon="database"><SqlTab /></Tab>
         <Tab text="Logs" icon="document-text"><LogsTab /></Tab>
       </TabContainer>

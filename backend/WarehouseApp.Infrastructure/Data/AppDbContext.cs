@@ -20,6 +20,9 @@ public class AppDbContext : DbContext
     public DbSet<LabelTemplate> LabelTemplates => Set<LabelTemplate>();
     public DbSet<OfflineSyncEntry> OfflineSyncEntries => Set<OfflineSyncEntry>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<UserGroup> UserGroups => Set<UserGroup>();
+    public DbSet<UserGroupMembership> UserGroupMemberships => Set<UserGroupMembership>();
+    public DbSet<GroupModulePermission> GroupModulePermissions => Set<GroupModulePermission>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -110,6 +113,38 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<AuditLog>()
             .HasIndex(a => new { a.TenantId, a.CreatedAt });
+
+        // UserGroup entities
+        modelBuilder.Entity<UserGroupMembership>()
+            .HasKey(m => new { m.GroupId, m.UserId });
+
+        modelBuilder.Entity<UserGroupMembership>()
+            .HasOne(m => m.Group)
+            .WithMany(g => g.Memberships)
+            .HasForeignKey(m => m.GroupId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<UserGroupMembership>()
+            .HasOne(m => m.User)
+            .WithMany()
+            .HasForeignKey(m => m.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<GroupModulePermission>()
+            .HasOne(p => p.Group)
+            .WithMany(g => g.ModulePermissions)
+            .HasForeignKey(p => p.GroupId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<UserGroup>()
+            .HasOne(g => g.Tenant)
+            .WithMany()
+            .HasForeignKey(g => g.TenantId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<UserGroup>()
+            .HasIndex(g => new { g.TenantId, g.Name })
+            .IsUnique();
     }
 
     public override Task<int> SaveChangesAsync(CancellationToken ct = default)

@@ -1,0 +1,310 @@
+{
+  "common": {
+    "save": "Uložit",
+    "cancel": "Zrušit",
+    "delete": "Smazat",
+    "edit": "Upravit",
+    "new": "Nový",
+    "refresh": "Obnovit",
+    "loading": "Načítání...",
+    "error": "Chyba",
+    "back": "Zpět",
+    "close": "Zavřít",
+    "confirm": "Potvrdit",
+    "yes": "Ano",
+    "no": "Ne",
+    "search": "Hledat",
+    "noData": "Žádná data",
+    "actions": "Akce",
+    "status": "Stav",
+    "name": "Název",
+    "description": "Popis",
+    "date": "Datum",
+    "quantity": "Množství",
+    "print": "Tisk",
+    "scan": "Skenovat",
+    "book": "Zaúčtovat",
+    "copies": "Kopie",
+    "type": "Typ",
+    "language": "Jazyk"
+  },
+  "nav": {
+    "launchpad": "Launchpad",
+    "pick": "Vychystávání",
+    "pack": "Balení",
+    "inventoryCount": "Inventura",
+    "inventoryTransfer": "Převod zásob",
+    "stockTransfer": "Žádanka o převod",
+    "purchaseDelivery": "Příjem zboží",
+    "purchaseDeliveryAdhoc": "Příjem Adhoc",
+    "salesDelivery": "Výdej zboží",
+    "labelGenerator": "Štítky",
+    "infoPoint": "InfoPoint",
+    "admin": "Admin"
+  },
+  "auth": {
+    "login": "Přihlásit",
+    "logout": "Odhlásit",
+    "username": "Uživatelské jméno",
+    "password": "Heslo",
+    "loginWithKeycloak": "Přihlásit přes Keycloak",
+    "loginError": "Přihlášení selhalo",
+    "loggedInAs": "Přihlášen jako"
+  },
+  "offline": {
+    "offlineMode": "Offline režim",
+    "offlineMessage": "Jste offline. Vaše vstupy budou uloženy a automaticky synchronizovány, jakmile budete zpět online.",
+    "syncInProgress": "Synchronizace... ({{count}} akcí čeká)",
+    "syncErrors": "{{count}} akce nebyly synchronizovány.",
+    "savedOffline": "Uloženo offline – bude synchronizováno po připojení"
+  },
+  "pick": {
+    "title": "Vychystávání",
+    "pickList": "Seznam vychystávání",
+    "scanArticle": "Skenovat artikl:",
+    "scanPlaceholder": "Naskenujte nebo zadejte čárový kód / číslo artiklu",
+    "articleNotFound": "Artikl \"{{code}}\" nebyl nalezen v tomto seznamu",
+    "fullyPicked": "✓ {{code}} plně vychystán",
+    "remaining": "{{code}}: zbývá {{count}} ks",
+    "saved": "Seznam vychystávání uložen",
+    "saveError": "Chyba při uložení: {{error}}",
+    "loading": "Načítání seznamu vychystávání...",
+    "columns": {
+      "item": "Artikl",
+      "description": "Popis",
+      "location": "Lokace",
+      "open": "Otevřeno",
+      "picked": "Vychystáno",
+      "status": "Stav"
+    },
+    "status": {
+      "done": "Hotovo",
+      "open": "Otevřeno"
+    },
+    "serialNumbers": "Sériová čísla",
+    "addSerial": "Přidat sériové číslo",
+    "serialPlaceholder": "Zadejte nebo naskenujte sériové číslo",
+    "serialConfirm": "Potvrdit {{count}} sériové(á) číslo(a)"
+  },
+  "pack": {
+    "title": "Balení",
+    "pickList": "Seznam vychystávání",
+    "package": "Balík",
+    "nve": "NVE",
+    "generateNve": "Generovat NVE",
+    "addPackage": "Přidat balík",
+    "book": "Zaúčtovat výdej",
+    "scanArticle": "Skenovat artikl:",
+    "articleNotFound": "Artikl nenalezen",
+    "loading": "Načítání seznamu vychystávání..."
+  },
+  "inventory": {
+    "title": "Inventura",
+    "openCounts": "Otevřené inventury",
+    "counting": "Počítání",
+    "itemCode": "Artikl",
+    "counted": "Napočteno",
+    "book": "Zaúčtovat inventuru",
+    "loading": "Načítání inventur...",
+    "saved": "Inventura zaúčtována",
+    "saveError": "Chyba zaúčtování: {{error}}"
+  },
+  "inventoryTransfer": {
+    "title": "Převod zásob",
+    "sourceWarehouse": "Zdrojový sklad",
+    "targetWarehouse": "Cílový sklad",
+    "scanItem": "Skenovat artikl",
+    "transfer": "Zaúčtovat převod",
+    "loading": "Načítání žádanek o převod..."
+  },
+  "stockTransfer": {
+    "title": "Žádanka o převod",
+    "new": "Nový převod",
+    "fromWarehouse": "Ze skladu",
+    "toWarehouse": "Do skladu",
+    "create": "Vytvořit"
+  },
+  "purchaseDelivery": {
+    "title": "Příjem zboží",
+    "purchaseOrder": "Objednávka nákupu",
+    "orderNo": "Č. objednávky",
+    "supplier": "Dodavatel",
+    "positions": "Položky",
+    "bookReceipt": "Zaúčtovat příjem",
+    "loading": "Načítání objednávky...",
+    "ordersLoading": "Načítání objednávek...",
+    "noOrders": "Žádné otevřené objednávky",
+    "scanArticle": "Skenovat artikl:",
+    "deliveryImage": "Foto dodacího listu (volitelné):",
+    "imageUploading": "Nahrávání fotografie...",
+    "booked": "Příjem zboží zaúčtován",
+    "bookError": "Chyba: {{error}}",
+    "ordered": "Objednáno",
+    "received": "Přijato",
+    "batch": "Šarže",
+    "batches": "Šarže",
+    "addBatch": "Přidat šarži"
+  },
+  "salesDelivery": {
+    "title": "Výdej zboží",
+    "order": "Objednávka",
+    "orderNo": "Č. objednávky",
+    "customer": "Zákazník",
+    "open": "Otevřeno",
+    "createDelivery": "Vytvořit dodávku",
+    "loading": "Načítání objednávky...",
+    "ordersLoading": "Načítání objednávek...",
+    "noOrders": "Žádné otevřené objednávky",
+    "signature": "Podpis",
+    "signaturePod": "Podpis (POD)",
+    "signHere": "Prosím podepište zde:",
+    "clearSignature": "Smazat",
+    "booked": "Dodávka vytvořena",
+    "bookError": "Chyba: {{error}}",
+    "ordered": "Objednáno",
+    "toDeliver": "K dodání",
+    "warehouse": "Sklad"
+  },
+  "labelGenerator": {
+    "title": "Generátor štítků",
+    "labelType": "Typ štítku",
+    "standard": "Standardní artikl",
+    "nve": "NVE / SSCC-18",
+    "qr": "QR kód",
+    "warehouseLabel": "Lokace skladu",
+    "printer": "Tiskárna",
+    "noPrinters": "Žádné tiskárny – dostupný tisk v prohlížeči",
+    "browserPrint": "Tisk v prohlížeči",
+    "printerPrint": "Tiskárna",
+    "choosePrinter": "-- Vyberte tiskárnu --",
+    "preview": "Náhled",
+    "printed": "Vytisknuto {{count}} štítků",
+    "printError": "Chyba tisku – zkontrolujte připojení tiskárny",
+    "choosePrinterFirst": "Vyberte tiskárnu",
+    "fields": {
+      "itemCode": "Číslo artiklu",
+      "itemDescription": "Popis",
+      "quantity": "Množství",
+      "batchNumber": "Číslo šarže",
+      "serialNumber": "Sériové číslo",
+      "warehouseCode": "Kód skladu",
+      "binCode": "Lokace (Bin)",
+      "nve": "NVE (18 číslic)",
+      "custom": "Vlastní obsah"
+    }
+  },
+  "infoPoint": {
+    "title": "InfoPoint",
+    "search": "Hledat artikl nebo lokaci...",
+    "searchButton": "Hledat",
+    "itemInfo": "Informace o artiklu",
+    "binInfo": "Informace o lokaci",
+    "stock": "Stav skladu",
+    "serialNumbers": "Sériová čísla",
+    "batches": "Šarže"
+  },
+  "admin": {
+    "title": "Administrace",
+    "tabs": {
+      "instances": "Instance",
+      "tenants": "Nájemci",
+      "users": "Uživatelé",
+      "groups": "Skupiny",
+      "printers": "Tiskárny",
+      "masterData": "Kmenová data",
+      "labelTemplates": "Šablony štítků",
+      "modules": "Moduly",
+      "offlineSync": "Offline sync",
+      "logs": "Logy",
+      "sql": "SQL nástroj"
+    },
+    "instances": {
+      "create": "Vytvořit instanci",
+      "created": "Instance vytvořena",
+      "url": "SL URL",
+      "port": "SL Port",
+      "baseUrl": "Base URL",
+      "clientId": "Client ID",
+      "clientSecret": "Client Secret",
+      "authMode": "Režim ověřování",
+      "cookie": "Cookie (B1SESSION)",
+      "basicAuth": "Basic Auth"
+    },
+    "tenants": {
+      "create": "Vytvořit nájemce",
+      "created": "Nájemce vytvořen",
+      "database": "Databáze",
+      "instance": "Instance",
+      "validated": "Ověřeno",
+      "pending": "Čeká"
+    },
+    "users": {
+      "role": "Role",
+      "roleUpdated": "Role aktualizována",
+      "roleUpdateError": "Chyba při uložení",
+      "roles": {
+        "admin": "Admin",
+        "supervisor": "Supervisor",
+        "warehouse": "Sklad",
+        "readonly": "Jen čtení",
+        "installationAdmin": "Admin instalace",
+        "instanceAdmin": "Admin instance",
+        "tenantAdmin": "Admin nájemce"
+      }
+    },
+    "groups": {
+      "title": "Skupiny a oprávnění",
+      "create": "Vytvořit skupinu",
+      "created": "Skupina vytvořena",
+      "groupName": "Název skupiny",
+      "permissions": "Oprávnění",
+      "members": "Členové",
+      "addMember": "Přidat člena",
+      "module": "Modul",
+      "canView": "Zobrazit",
+      "canEdit": "Upravit",
+      "canBook": "Zaúčtovat",
+      "noGroups": "Žádné skupiny"
+    },
+    "masterData": {
+      "syncItems": "Synchronizovat artikly",
+      "syncWarehouses": "Synchronizovat sklady",
+      "syncBP": "Synchronizovat obchodní partnery",
+      "syncAll": "Synchronizovat vše",
+      "syncSuccess": "{{type}} synchronizováno ({{count}} záznamů)",
+      "syncError": "Chyba synchronizace: {{error}}"
+    },
+    "logs": {
+      "refresh": "Obnovit",
+      "lines": "Řádky",
+      "analysis": "Analýza logů",
+      "totalErrors": "Celkem chyb",
+      "totalWarnings": "Celkem varování",
+      "topModules": "Nejčastější moduly",
+      "latestErrors": "Poslední chyby"
+    },
+    "sync": {
+      "pending": "Čeká",
+      "processAll": "Zpracovat vše",
+      "status": {
+        "pending": "Čeká",
+        "syncing": "Synchronizace",
+        "done": "Hotovo",
+        "failed": "Chyba"
+      }
+    }
+  },
+  "errors": {
+    "generic": "Došlo k neočekávané chybě.",
+    "networkError": "Chyba sítě – zkontrolujte připojení.",
+    "notFound": "Požadovaný zdroj nebyl nalezen.",
+    "unauthorized": "Nemáte oprávnění k provedení této akce.",
+    "sessionExpired": "Vaše relace vypršela. Přihlaste se znovu.",
+    "boundary": {
+      "title": "Něco se pokazilo",
+      "message": "V tomto modulu došlo k chybě. Ostatní moduly jsou stále dostupné.",
+      "reload": "Obnovit",
+      "details": "Podrobnosti chyby"
+    }
+  }
+}

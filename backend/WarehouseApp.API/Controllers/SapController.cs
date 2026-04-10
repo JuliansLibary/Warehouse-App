@@ -140,6 +140,40 @@ public class SapController : ControllerBase
         return result.StatusCode == 204 ? NoContent() : Ok(result.Data);
     }
 
+    /// <summary>
+    /// Upload a file attachment and link it to a SAP document.
+    /// Used by PurchaseDelivery to attach delivery note images to GoodsReceiptsPO.
+    /// </summary>
+    [HttpPost("attachment")]
+    [RequestSizeLimit(20 * 1024 * 1024)] // 20 MB
+    public async Task<IActionResult> UploadAttachment(
+        [FromForm] IFormFile file,
+        [FromForm] long docEntry,
+        [FromForm] string objectType,
+        [FromHeader(Name = "X-Instance-Id")] long instanceId,
+        CancellationToken ct)
+    {
+        if (file == null || file.Length == 0)
+            return BadRequest("No file provided");
+
+        var (client, sessionToken, error) = await GetClientAndSession(instanceId, ct);
+        if (error != null) return StatusCode(401, error);
+
+        using var ms = new MemoryStream();
+        await file.CopyToAsync(ms, ct);
+        var fileBytes = ms.ToArray();
+
+        // SAP Service Layer: POST /Attachments2 with multipart/form-data
+        var result = await client!.UploadAttachmentAsync<object>(
+            $"Attachments2", fileBytes, file.FileName, sessionToken, ct);
+
+        if (!result.Success)
+            return StatusCode(result.StatusCode, new { message = result.ErrorMessage });
+
+        _logger.LogInformation("Attachment uploaded for {ObjectType} DocEntry={DocEntry}", objectType, docEntry);
+        return Ok(result.Data);
+    }
+
     // ─── Helpers ─────────────────────────────────────────────────────────────────
 
     /// <summary>
