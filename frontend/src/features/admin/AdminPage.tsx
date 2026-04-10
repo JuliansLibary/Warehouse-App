@@ -10,6 +10,7 @@ import { API_BASE } from '../../shared/services/api';
 
 function useAdminFetch<T>(path: string, deps: unknown[] = []) {
   const { accessToken } = useSelector((s: RootState) => s.auth);
+  const { selectedTenantId, selectedInstanceId } = useSelector((s: RootState) => s.tenant);
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -17,7 +18,10 @@ function useAdminFetch<T>(path: string, deps: unknown[] = []) {
   useEffect(() => {
     if (!accessToken) return;
     setLoading(true);
-    fetch(`${API_BASE}${path}`, { headers: { Authorization: `Bearer ${accessToken}` } })
+    const headers: Record<string, string> = { Authorization: `Bearer ${accessToken}` };
+    if (selectedTenantId) headers['X-Tenant-Id'] = String(selectedTenantId);
+    if (selectedInstanceId) headers['X-Instance-Id'] = String(selectedInstanceId);
+    fetch(`${API_BASE}${path}`, { headers })
       .then(r => r.json())
       .then(setData)
       .catch(e => setError(e.message))
@@ -251,17 +255,22 @@ function PrintersTab() {
 // ─── Offline-Sync Tab ────────────────────────────────────────────────────────
 function SyncTab() {
   const { accessToken } = useSelector((s: RootState) => s.auth);
-  const { selectedTenantId } = useSelector((s: RootState) => s.tenant);
-  const { data: entries, loading } = useAdminFetch<any[]>(`/offline-sync/pending?tenantId=${selectedTenantId}`);
+  const { selectedTenantId, selectedInstanceId } = useSelector((s: RootState) => s.tenant);
+  // useAdminFetch now adds X-Tenant-Id header automatically; query param kept for clarity
+  const { data: entries, loading } = useAdminFetch<any[]>(`/offline-sync/pending`, [selectedTenantId]);
   const [processing, setProcessing] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
   async function processAll() {
+    if (!selectedInstanceId) { setMsg('Kein SAP-Instance ausgewählt'); return; }
     setProcessing(true);
     const res = await fetch(`${API_BASE}/offline-sync/process`, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tenantId: selectedTenantId }),
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'X-Tenant-Id':   String(selectedTenantId ?? 0),
+        'X-Instance-Id': String(selectedInstanceId),
+      },
     });
     setProcessing(false);
     setMsg(res.ok ? 'Synchronisation abgeschlossen' : 'Fehler bei der Synchronisation');
@@ -582,6 +591,83 @@ function LogsTab() {
   );
 }
 
+// ─── Master Data Sync Tab ─────────────────────────────────────────────────────
+const SYNC_TYPES = [
+  { key: 'items',            label: 'Artikel (Items)',          endpoint: 'sync/items' },
+  { key: 'warehouses',       label: 'Lager (Warehouses)',       endpoint: 'sync/warehouses' },
+  { key: 'businesspartners', label: 'Geschäftspartner (BP)',     endpoint: 'sync/businesspartners' },
+] as const;
+
+function MasterDataTab() {
+  const { accessToken } = useSelector((s: RootState) => s.auth);
+  const { selectedTenantId, selectedInstanceId } = useSelector((s: RootState) => s.tenant);
+  const [syncing, setSyncing] = useState<string | null>(null);
+  const [results, setResults] = useState<Record<string, { ok: boolean; msg: string }>>({});
+
+  async function syncOne(type: { key: string; endpoint: string; label: string }) {
+    if (!selectedInstanceId || !selectedTenantId) {
+      setResults(r => ({ ...r, [type.key]: { ok: false, msg: 'Kein Mandant / keine Instanz ausgewählt' } }));
+      return;
+    }
+    setSyncing(type.key);
+    try {
+      const res = await fetch(
+        `${API_BASE}/masterdata/${type.endpoint}?tenantId=${selectedTenantId}`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization:   `Bearer ${accessToken}`,
+            'X-Instance-Id': String(selectedInstanceId),
+            'X-Tenant-Id':   String(selectedTenantId),
+          },
+        }
+      );
+      const body = await res.json().catch(() => ({}));
+      setResults(r => ({ ...r, [type.key]: { ok: res.ok, msg: res.ok ? body.message ?? 'OK' : body.message ?? 'Fehler' } }));
+    } catch (e: any) {
+      setResults(r => ({ ...r, [type.key]: { ok: false, msg: e.message } }));
+    } finally {
+      setSyncing(null);
+    }
+  }
+
+  async function syncAll() {
+    for (const type of SYNC_TYPES) await syncOne(type);
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '0.5rem' }}>
+      <Toolbar>
+        <Title level="H5">SAP-Stammdaten in den lokalen Cache synchronisieren</Title>
+        <ToolbarSpacer />
+        <Button icon="synchronize" design="Emphasized" disabled={!!syncing} onClick={syncAll}>
+          Alle synchronisieren
+        </Button>
+      </Toolbar>
+      <Table columns={<><TableColumn>Datentyp</TableColumn><TableColumn>Status</TableColumn><TableColumn /></>}>
+        {SYNC_TYPES.map(type => (
+          <TableRow key={type.key}>
+            <TableCell>{type.label}</TableCell>
+            <TableCell>
+              {results[type.key] && (
+                <Badge colorScheme={results[type.key].ok ? '8' : '1'}>
+                  {results[type.key].msg}
+                </Badge>
+              )}
+            </TableCell>
+            <TableCell>
+              <Button design="Transparent" icon="download" disabled={syncing === type.key}
+                onClick={() => syncOne(type)}>
+                {syncing === type.key ? 'Lädt…' : 'Sync'}
+              </Button>
+            </TableCell>
+          </TableRow>
+        ))}
+      </Table>
+    </div>
+  );
+}
+
 // ─── Main AdminPage ───────────────────────────────────────────────────────────
 export function AdminPage() {
   return (
@@ -594,6 +680,7 @@ export function AdminPage() {
         <Tab text="Drucker" icon="print"><PrintersTab /></Tab>
         <Tab text="Module" icon="grid"><ModuleConfigTab /></Tab>
         <Tab text="Label-Vorlagen" icon="print-2"><LabelTemplatesTab /></Tab>
+        <Tab text="Stammdaten" icon="cloud-download"><MasterDataTab /></Tab>
         <Tab text="Offline-Sync" icon="synchronize"><SyncTab /></Tab>
         <Tab text="SQL-Tool" icon="database"><SqlTab /></Tab>
         <Tab text="Logs" icon="document-text"><LogsTab /></Tab>
