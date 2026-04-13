@@ -1,0 +1,1124 @@
+import { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
+import {
+  Title, TabContainer, Tab, Table, TableColumn, TableRow, TableCell,
+  Button, Input, Label, Dialog, Bar, MessageStrip, BusyIndicator,
+  Toolbar, ToolbarSpacer, Select, Option, TextArea, Badge, Text,
+} from '@ui5/webcomponents-react';
+import { RootState } from '../../app/store';
+import { API_BASE } from '../../shared/services/api';
+
+function useAdminFetch<T>(path: string, deps: unknown[] = []) {
+  const { accessToken } = useSelector((s: RootState) => s.auth);
+  const { selectedTenantId, selectedInstanceId } = useSelector((s: RootState) => s.tenant);
+  const [data, setData] = useState<T | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!accessToken) return;
+    setLoading(true);
+    const headers: Record<string, string> = { Authorization: `Bearer ${accessToken}` };
+    if (selectedTenantId) headers['X-Tenant-Id'] = String(selectedTenantId);
+    if (selectedInstanceId) headers['X-Instance-Id'] = String(selectedInstanceId);
+    fetch(`${API_BASE}${path}`, { headers })
+      .then(r => r.json())
+      .then(setData)
+      .catch(e => setError(e.message))
+      .finally(() => setLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accessToken, path, ...deps]);
+
+  return { data, loading, error, setData };
+}
+
+// ─── Instances Tab ───────────────────────────────────────────────────────────
+function InstancesTab() {
+  const { accessToken } = useSelector((s: RootState) => s.auth);
+  const { data: instances, loading, error } = useAdminFetch<any[]>('/instances');
+  const [showDialog, setShowDialog] = useState(false);
+  const [form, setForm] = useState({ name: '', slUrl: '', slPort: 50000, baseUrl: '', clientId: '', clientSecret: '', authMode: 0 });
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  async function handleSave() {
+    setSaving(true);
+    const res = await fetch(`${API_BASE}/instances`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify(form),
+    });
+    setSaving(false);
+    if (res.ok) { setMsg('Instanz erstellt'); setShowDialog(false); }
+    else setMsg('Fehler beim Speichern');
+  }
+
+  if (loading) return <BusyIndicator active />;
+  if (error) return <MessageStrip design="Negative">{error}</MessageStrip>;
+
+  return (
+    <div>
+      {msg && <MessageStrip design="Information" onClose={() => setMsg(null)}>{msg}</MessageStrip>}
+      <Toolbar>
+        <ToolbarSpacer />
+        <Button icon="add" onClick={() => setShowDialog(true)}>Neu</Button>
+      </Toolbar>
+      <Table columns={<><TableColumn>Name</TableColumn><TableColumn>URL</TableColumn><TableColumn>Port</TableColumn><TableColumn>Auth</TableColumn></>}>
+        {(instances ?? []).map((inst: any) => (
+          <TableRow key={inst.id}>
+            <TableCell>{inst.name}</TableCell>
+            <TableCell>{inst.slUrl}</TableCell>
+            <TableCell>{inst.slPort}</TableCell>
+            <TableCell><Badge colorScheme={inst.authMode === 0 ? '8' : '2'}>{inst.authMode === 0 ? 'Cookie' : 'BasicAuth'}</Badge></TableCell>
+          </TableRow>
+        ))}
+      </Table>
+      <Dialog open={showDialog} headerText="Instanz erstellen"
+        footer={<Bar endContent={<><Button onClick={handleSave} design="Emphasized" disabled={saving}>Speichern</Button><Button onClick={() => setShowDialog(false)}>Abbrechen</Button></>} />}>
+        <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', minWidth: 350 }}>
+          <Label>Name</Label><Input value={form.name} onInput={(e: any) => setForm(p => ({ ...p, name: e.target.value }))} />
+          <Label>SL URL</Label><Input value={form.slUrl} onInput={(e: any) => setForm(p => ({ ...p, slUrl: e.target.value }))} placeholder="https://sap-server" />
+          <Label>SL Port</Label><Input type="Number" value={String(form.slPort)} onInput={(e: any) => setForm(p => ({ ...p, slPort: Number(e.target.value) }))} />
+          <Label>Base URL</Label><Input value={form.baseUrl} onInput={(e: any) => setForm(p => ({ ...p, baseUrl: e.target.value }))} />
+          <Label>Client ID</Label><Input value={form.clientId} onInput={(e: any) => setForm(p => ({ ...p, clientId: e.target.value }))} />
+          <Label>Client Secret</Label><Input type="Password" value={form.clientSecret} onInput={(e: any) => setForm(p => ({ ...p, clientSecret: e.target.value }))} />
+          <Label>Auth-Modus</Label>
+          <Select onChange={(e: any) => setForm(p => ({ ...p, authMode: Number(e.detail.selectedOption.value) }))}>
+            <Option value="0" selected={form.authMode === 0}>Cookie (B1SESSION)</Option>
+            <Option value="1" selected={form.authMode === 1}>Basic Auth</Option>
+          </Select>
+        </div>
+      </Dialog>
+    </div>
+  );
+}
+
+// ─── Tenants Tab ─────────────────────────────────────────────────────────────
+function TenantsTab() {
+  const { accessToken } = useSelector((s: RootState) => s.auth);
+  const { data: tenants, loading } = useAdminFetch<any[]>('/tenants');
+  const { data: instances } = useAdminFetch<any[]>('/instances');
+  const [showDialog, setShowDialog] = useState(false);
+  const [form, setForm] = useState({ name: '', companyDb: '', instanceId: 0 });
+  const [msg, setMsg] = useState<string | null>(null);
+
+  async function handleSave() {
+    const res = await fetch(`${API_BASE}/tenants`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify(form),
+    });
+    if (res.ok) { setMsg('Mandant erstellt'); setShowDialog(false); }
+    else setMsg('Fehler');
+  }
+
+  if (loading) return <BusyIndicator active />;
+
+  return (
+    <div>
+      {msg && <MessageStrip design="Information" onClose={() => setMsg(null)}>{msg}</MessageStrip>}
+      <Toolbar><ToolbarSpacer /><Button icon="add" onClick={() => setShowDialog(true)}>Neu</Button></Toolbar>
+      <Table columns={<><TableColumn>Name</TableColumn><TableColumn>Datenbank</TableColumn><TableColumn>Instanz</TableColumn><TableColumn>Status</TableColumn></>}>
+        {(tenants ?? []).map((t: any) => (
+          <TableRow key={t.id}>
+            <TableCell>{t.name}</TableCell>
+            <TableCell>{t.companyDb}</TableCell>
+            <TableCell>{t.instanceId}</TableCell>
+            <TableCell><Badge colorScheme={t.isValidated ? '8' : '6'}>{t.isValidated ? 'Validiert' : 'Ausstehend'}</Badge></TableCell>
+          </TableRow>
+        ))}
+      </Table>
+      <Dialog open={showDialog} headerText="Mandant erstellen"
+        footer={<Bar endContent={<><Button onClick={handleSave} design="Emphasized">Speichern</Button><Button onClick={() => setShowDialog(false)}>Abbrechen</Button></>} />}>
+        <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', minWidth: 300 }}>
+          <Label>Name</Label><Input value={form.name} onInput={(e: any) => setForm(p => ({ ...p, name: e.target.value }))} />
+          <Label>Datenbank</Label><Input value={form.companyDb} onInput={(e: any) => setForm(p => ({ ...p, companyDb: e.target.value }))} />
+          <Label>Instanz</Label>
+          <Select onChange={(e: any) => setForm(p => ({ ...p, instanceId: Number(e.detail.selectedOption.value) }))}>
+            {(instances ?? []).map((i: any) => <Option key={i.id} value={String(i.id)}>{i.name}</Option>)}
+          </Select>
+        </div>
+      </Dialog>
+    </div>
+  );
+}
+
+// ─── Users Tab ───────────────────────────────────────────────────────────────
+function UsersTab() {
+  const { accessToken } = useSelector((s: RootState) => s.auth);
+  const { data: users, loading, setData } = useAdminFetch<any[]>('/users');
+  const [editUser, setEditUser] = useState<any>(null);
+  const [newRole, setNewRole] = useState<number>(2);
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  async function handleRoleSave() {
+    if (!editUser) return;
+    setSaving(true);
+    const res = await fetch(`${API_BASE}/users/${editUser.id}/role`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify(newRole),
+    });
+    setSaving(false);
+    if (res.ok) {
+      setMsg('Rolle aktualisiert');
+      setData((prev: any) => (prev ?? []).map((u: any) => u.id === editUser.id ? { ...u, role: newRole } : u));
+      setEditUser(null);
+    } else {
+      setMsg('Fehler beim Speichern');
+    }
+  }
+
+  const roleLabels = ['Admin', 'Supervisor', 'Lager', 'ReadOnly'];
+  const roleColors = ['1', '2', '8', '6'];
+
+  if (loading) return <BusyIndicator active />;
+  return (
+    <div>
+      {msg && <MessageStrip design="Information" onClose={() => setMsg(null)}>{msg}</MessageStrip>}
+      <Table columns={<><TableColumn>Identity</TableColumn><TableColumn>SAP-User</TableColumn><TableColumn>Rolle</TableColumn><TableColumn>Sprache</TableColumn><TableColumn>Lager</TableColumn><TableColumn /></>}>
+        {(users ?? []).map((u: any) => (
+          <TableRow key={u.id}>
+            <TableCell>{u.identityId}</TableCell>
+            <TableCell>{u.sapUsername ?? <em style={{ color: 'var(--sapNeutralColor)' }}>nicht gesetzt</em>}</TableCell>
+            <TableCell>
+              <Badge colorScheme={roleColors[u.role] ?? '6'}>{roleLabels[u.role] ?? u.role}</Badge>
+            </TableCell>
+            <TableCell>{u.language}</TableCell>
+            <TableCell>{u.chosenWarehouseCode ?? '-'}</TableCell>
+            <TableCell>
+              <Button design="Transparent" icon="edit" onClick={() => { setEditUser(u); setNewRole(u.role); }}>
+                Rolle
+              </Button>
+            </TableCell>
+          </TableRow>
+        ))}
+      </Table>
+
+      <Dialog open={!!editUser} headerText={`Rolle ändern – ${editUser?.identityId}`}
+        footer={<Bar endContent={<><Button design="Emphasized" onClick={handleRoleSave} disabled={saving}>Speichern</Button><Button onClick={() => setEditUser(null)}>Abbrechen</Button></>} />}>
+        <div style={{ padding: '1rem' }}>
+          <Label>Neue Rolle</Label>
+          <Select onChange={(e: any) => setNewRole(Number(e.detail.selectedOption.value))} style={{ width: '100%', marginTop: '0.25rem' }}>
+            {roleLabels.map((label, idx) => (
+              <Option key={idx} value={String(idx)} selected={idx === newRole}>{label}</Option>
+            ))}
+          </Select>
+        </div>
+      </Dialog>
+    </div>
+  );
+}
+
+// ─── Printers Tab ────────────────────────────────────────────────────────────
+function PrintersTab() {
+  const { accessToken } = useSelector((s: RootState) => s.auth);
+  const { selectedTenantId } = useSelector((s: RootState) => s.tenant);
+  const { data: printers, loading } = useAdminFetch<any[]>(`/printers?tenantId=${selectedTenantId}`);
+  const [showDialog, setShowDialog] = useState(false);
+  const [form, setForm] = useState({ name: '', url: '', tenantId: selectedTenantId });
+
+  async function handleSave() {
+    await fetch(`${API_BASE}/printers`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({ ...form, tenantId: selectedTenantId }),
+    });
+    setShowDialog(false);
+  }
+
+  if (loading) return <BusyIndicator active />;
+  return (
+    <div>
+      <Toolbar><ToolbarSpacer /><Button icon="add" onClick={() => setShowDialog(true)}>Neu</Button></Toolbar>
+      <Table columns={<><TableColumn>Name</TableColumn><TableColumn>URL</TableColumn><TableColumn>Standard</TableColumn></>}>
+        {(printers ?? []).map((p: any) => (
+          <TableRow key={p.id}>
+            <TableCell>{p.name}</TableCell>
+            <TableCell>{p.url}</TableCell>
+            <TableCell>{p.isDefault ? <Badge colorScheme="8">Standard</Badge> : ''}</TableCell>
+          </TableRow>
+        ))}
+      </Table>
+      <Dialog open={showDialog} headerText="Drucker erstellen"
+        footer={<Bar endContent={<><Button onClick={handleSave} design="Emphasized">Speichern</Button><Button onClick={() => setShowDialog(false)}>Abbrechen</Button></>} />}>
+        <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          <Label>Name</Label><Input value={form.name} onInput={(e: any) => setForm(p => ({ ...p, name: e.target.value }))} />
+          <Label>URL (ZPL/IPP)</Label><Input value={form.url} onInput={(e: any) => setForm(p => ({ ...p, url: e.target.value }))} placeholder="http://printer:631/ipp" />
+        </div>
+      </Dialog>
+    </div>
+  );
+}
+
+// ─── Offline-Sync Tab ────────────────────────────────────────────────────────
+function SyncTab() {
+  const { accessToken } = useSelector((s: RootState) => s.auth);
+  const { selectedTenantId, selectedInstanceId } = useSelector((s: RootState) => s.tenant);
+  // useAdminFetch now adds X-Tenant-Id header automatically; query param kept for clarity
+  const { data: entries, loading } = useAdminFetch<any[]>(`/offline-sync/pending`, [selectedTenantId]);
+  const [processing, setProcessing] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  async function processAll() {
+    if (!selectedInstanceId) { setMsg('Kein SAP-Instance ausgewählt'); return; }
+    setProcessing(true);
+    const res = await fetch(`${API_BASE}/offline-sync/process`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'X-Tenant-Id':   String(selectedTenantId ?? 0),
+        'X-Instance-Id': String(selectedInstanceId),
+      },
+    });
+    setProcessing(false);
+    setMsg(res.ok ? 'Synchronisation abgeschlossen' : 'Fehler bei der Synchronisation');
+  }
+
+  if (loading) return <BusyIndicator active />;
+  return (
+    <div>
+      {msg && <MessageStrip design="Information" onClose={() => setMsg(null)}>{msg}</MessageStrip>}
+      <Toolbar>
+        <Title level="H5">{(entries ?? []).length} ausstehende Einträge</Title>
+        <ToolbarSpacer />
+        <Button icon="synchronize" onClick={processAll} disabled={processing} design="Emphasized">
+          Jetzt synchronisieren
+        </Button>
+      </Toolbar>
+      <Table columns={<><TableColumn>Modul</TableColumn><TableColumn>Aktion</TableColumn><TableColumn>Endpunkt</TableColumn><TableColumn>Status</TableColumn><TableColumn>Versuche</TableColumn></>}>
+        {(entries ?? []).map((e: any) => (
+          <TableRow key={e.id}>
+            <TableCell>{e.module}</TableCell>
+            <TableCell>{e.actionType}</TableCell>
+            <TableCell style={{ fontSize: '0.75rem' }}>{e.sapEndpoint}</TableCell>
+            <TableCell><Badge colorScheme={e.status === 'Failed' ? '1' : e.status === 'Done' ? '8' : '2'}>{e.status}</Badge></TableCell>
+            <TableCell>{e.retryCount}</TableCell>
+          </TableRow>
+        ))}
+      </Table>
+    </div>
+  );
+}
+
+// ─── SQL Tool Tab ─────────────────────────────────────────────────────────────
+function SqlTab() {
+  const { accessToken } = useSelector((s: RootState) => s.auth);
+  const { selectedTenantId, selectedInstanceId } = useSelector((s: RootState) => s.tenant);
+  const [queryName, setQueryName] = useState('');
+  const [result, setResult] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function runQuery() {
+    setLoading(true);
+    setError(null);
+    try {
+      const params = new URLSearchParams({ endpoint: `SQLQueries('${queryName}')/List` });
+      const res = await fetch(`${API_BASE}/sap/query?${params}`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'X-Tenant-Id': String(selectedTenantId),
+          'X-Instance-Id': String(selectedInstanceId ?? ''),
+        },
+      });
+      if (!res.ok) throw new Error(await res.text());
+      setResult(await res.json());
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '0.5rem' }}>
+      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-end' }}>
+        <div style={{ flex: 1 }}>
+          <Label>SAP SQL Query Name</Label>
+          <Input value={queryName} onInput={(e: any) => setQueryName(e.target.value)} placeholder="z.B. MyQuery" style={{ width: '100%' }} />
+        </div>
+        <Button icon="begin" onClick={runQuery} disabled={loading || !queryName} design="Emphasized">Ausführen</Button>
+      </div>
+      {error && <MessageStrip design="Negative">{error}</MessageStrip>}
+      {result && (
+        <TextArea
+          value={JSON.stringify(result, null, 2)}
+          rows={20}
+          style={{ width: '100%', fontFamily: 'monospace' }}
+          readonly
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── Label Templates Tab ─────────────────────────────────────────────────────
+const TEMPLATE_TYPES = ['NVE', 'QR', 'Standard', 'Warehouse'];
+
+function LabelTemplatesTab() {
+  const { accessToken } = useSelector((s: RootState) => s.auth);
+  const { selectedTenantId } = useSelector((s: RootState) => s.tenant);
+  const { data: templates, loading, setData } = useAdminFetch<any[]>(`/label-templates?tenantId=${selectedTenantId}`, [selectedTenantId]);
+  const [showDialog, setShowDialog] = useState(false);
+  const [editItem, setEditItem] = useState<any>(null);
+  const [form, setForm] = useState({ name: '', templateType: 'Standard', htmlContent: '', isDefault: false });
+  const [msg, setMsg] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  function openNew() {
+    setEditItem(null);
+    setForm({ name: '', templateType: 'Standard', htmlContent: '', isDefault: false });
+    setShowDialog(true);
+  }
+
+  function openEdit(t: any) {
+    setEditItem(t);
+    // Load full template (with HtmlContent)
+    fetch(`${API_BASE}/label-templates/${t.id}`, { headers: { Authorization: `Bearer ${accessToken}` } })
+      .then(r => r.json())
+      .then(d => { setForm({ name: d.name, templateType: d.templateType, htmlContent: d.htmlContent, isDefault: d.isDefault }); setShowDialog(true); });
+  }
+
+  async function handleSave() {
+    setSaving(true);
+    const url = editItem ? `${API_BASE}/label-templates/${editItem.id}` : `${API_BASE}/label-templates`;
+    const method = editItem ? 'PUT' : 'POST';
+    const res = await fetch(url, {
+      method,
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({ ...form, tenantId: selectedTenantId }),
+    });
+    setSaving(false);
+    if (res.ok) {
+      const saved = await res.json();
+      if (editItem) {
+        setData((prev: any) => (prev ?? []).map((t: any) => t.id === editItem.id ? saved : t));
+      } else {
+        setData((prev: any) => [...(prev ?? []), saved]);
+      }
+      setMsg(editItem ? 'Vorlage aktualisiert' : 'Vorlage erstellt');
+      setShowDialog(false);
+    } else {
+      setMsg('Fehler beim Speichern');
+    }
+  }
+
+  async function handleSetDefault(t: any) {
+    const res = await fetch(`${API_BASE}/label-templates/${t.id}/set-default`, {
+      method: 'POST', headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (res.ok) {
+      setData((prev: any) => (prev ?? []).map((x: any) =>
+        ({ ...x, isDefault: x.id === t.id ? true : (x.templateType === t.templateType ? false : x.isDefault) })
+      ));
+      setMsg('Standard gesetzt');
+    }
+  }
+
+  async function handleDelete(t: any) {
+    const res = await fetch(`${API_BASE}/label-templates/${t.id}`, {
+      method: 'DELETE', headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (res.ok) {
+      setData((prev: any) => (prev ?? []).filter((x: any) => x.id !== t.id));
+      setMsg('Vorlage gelöscht');
+    }
+  }
+
+  if (loading) return <BusyIndicator active />;
+  return (
+    <div>
+      {msg && <MessageStrip design="Information" onClose={() => setMsg(null)}>{msg}</MessageStrip>}
+      <Toolbar><ToolbarSpacer /><Button icon="add" onClick={openNew}>Neu</Button></Toolbar>
+      <Table columns={<><TableColumn>Name</TableColumn><TableColumn>Typ</TableColumn><TableColumn>Standard</TableColumn><TableColumn /></>}>
+        {(templates ?? []).map((t: any) => (
+          <TableRow key={t.id}>
+            <TableCell>{t.name}</TableCell>
+            <TableCell><Badge colorScheme="2">{t.templateType}</Badge></TableCell>
+            <TableCell>{t.isDefault ? <Badge colorScheme="8">Standard</Badge> : ''}</TableCell>
+            <TableCell>
+              <Button design="Transparent" icon="edit" onClick={() => openEdit(t)} />
+              <Button design="Transparent" icon="accept" onClick={() => handleSetDefault(t)} title="Als Standard setzen" />
+              <Button design="Transparent" icon="delete" onClick={() => handleDelete(t)} />
+            </TableCell>
+          </TableRow>
+        ))}
+      </Table>
+      <Dialog open={showDialog} headerText={editItem ? 'Vorlage bearbeiten' : 'Neue Vorlage'}
+        footer={<Bar endContent={<><Button design="Emphasized" onClick={handleSave} disabled={saving}>Speichern</Button><Button onClick={() => setShowDialog(false)}>Abbrechen</Button></>} />}>
+        <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', minWidth: 400 }}>
+          <Label>Name</Label>
+          <Input value={form.name} onInput={(e: any) => setForm(p => ({ ...p, name: e.target.value }))} />
+          <Label>Typ</Label>
+          <Select onChange={(e: any) => setForm(p => ({ ...p, templateType: e.detail.selectedOption.value }))}>
+            {TEMPLATE_TYPES.map(t => <Option key={t} value={t} selected={form.templateType === t}>{t}</Option>)}
+          </Select>
+          <Label>HTML-Inhalt</Label>
+          <TextArea value={form.htmlContent} onInput={(e: any) => setForm(p => ({ ...p, htmlContent: e.target.value }))}
+            rows={12} style={{ width: '100%', fontFamily: 'monospace' }} />
+        </div>
+      </Dialog>
+    </div>
+  );
+}
+
+// ─── Module Config Tab ────────────────────────────────────────────────────────
+const MODULE_LIST = [
+  { name: 'Pick',                   route: '/pick',                     label: 'Kommissionierung' },
+  { name: 'Pack',                   route: '/pack',                     label: 'Verpackung / NVE' },
+  { name: 'InventoryCount',         route: '/inventory-count',          label: 'Inventur' },
+  { name: 'InventoryTransfer',      route: '/inventory-transfer',       label: 'Umbuchung' },
+  { name: 'StockTransfer',          route: '/stock-transfer',           label: 'Umlagerung' },
+  { name: 'PurchaseDelivery',       route: '/purchase-delivery',        label: 'Wareneingang (ref.)' },
+  { name: 'PurchaseDeliveryAdhoc',  route: '/purchase-delivery-adhoc',  label: 'Wareneingang (Adhoc)' },
+  { name: 'SalesDelivery',          route: '/sales-delivery',           label: 'Warenausgang' },
+  { name: 'LabelGenerator',         route: '/label-generator',          label: 'Etikettendruck' },
+  { name: 'InfoPoint',              route: '/info-point',               label: 'InfoPoint' },
+];
+
+function ModuleConfigTab() {
+  const { accessToken } = useSelector((s: RootState) => s.auth);
+  const { selectedTenantId } = useSelector((s: RootState) => s.tenant);
+  const { data: configs, loading } = useAdminFetch<any[]>(`/configurations?tenantId=${selectedTenantId}`, [selectedTenantId]);
+  const [saving, setSaving] = useState<string | null>(null);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  function isActive(moduleName: string) {
+    const cfg = (configs ?? []).find((c: any) => c.module === moduleName);
+    return cfg ? cfg.isActive : true; // default active if no config entry
+  }
+
+  async function toggle(mod: { name: string; route: string; label: string }) {
+    const current = isActive(mod.name);
+    setSaving(mod.name);
+    const res = await fetch(`${API_BASE}/configurations`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+      body: JSON.stringify({
+        module: mod.name,
+        configJson: '{}',
+        type: 'module',
+        route: mod.route,
+        isConfigurable: true,
+        isActive: !current,
+        icon: null,
+        tenantId: selectedTenantId,
+      }),
+    });
+    setSaving(null);
+    if (res.ok) setMsg(`${mod.label} ${!current ? 'aktiviert' : 'deaktiviert'}`);
+    else setMsg('Fehler beim Speichern');
+  }
+
+  if (loading) return <BusyIndicator active />;
+  return (
+    <div>
+      {msg && <MessageStrip design="Information" onClose={() => setMsg(null)}>{msg}</MessageStrip>}
+      <Table columns={<><TableColumn>Modul</TableColumn><TableColumn>Route</TableColumn><TableColumn>Status</TableColumn><TableColumn /></>}>
+        {MODULE_LIST.map(mod => (
+          <TableRow key={mod.name}>
+            <TableCell>{mod.label}</TableCell>
+            <TableCell style={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>{mod.route}</TableCell>
+            <TableCell>
+              <Badge colorScheme={isActive(mod.name) ? '8' : '6'}>
+                {isActive(mod.name) ? 'Aktiv' : 'Deaktiviert'}
+              </Badge>
+            </TableCell>
+            <TableCell>
+              <Button design="Transparent" icon={isActive(mod.name) ? 'decline' : 'accept'}
+                disabled={saving === mod.name}
+                onClick={() => toggle(mod)}>
+                {isActive(mod.name) ? 'Deaktivieren' : 'Aktivieren'}
+              </Button>
+            </TableCell>
+          </TableRow>
+        ))}
+      </Table>
+    </div>
+  );
+}
+
+// ─── Logs Tab ─────────────────────────────────────────────────────────────────
+function LogsTab() {
+  const { accessToken } = useSelector((s: RootState) => s.auth);
+  const [lines, setLines] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [lineCount, setLineCount] = useState(200);
+  const [filterLevel, setFilterLevel] = useState<'all' | 'error' | 'warn'>('all');
+  const [searchText, setSearchText] = useState('');
+  const [showAnalysis, setShowAnalysis] = useState(false);
+
+  async function fetchLogs() {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`${API_BASE}/admin/logs?lines=${lineCount}`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json();
+      setLines(data.lines ?? []);
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => { fetchLogs(); }, []);  // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Log analysis
+  const errorLines = lines.filter(l => /\[ERR|ERROR|Exception/i.test(l));
+  const warnLines = lines.filter(l => /\[WRN|WARN/i.test(l));
+  const moduleStats = lines.reduce<Record<string, number>>((acc, l) => {
+    const m = l.match(/\[(Pick|Pack|InventoryCount|InventoryTransfer|StockTransfer|PurchaseDelivery|SalesDelivery|LabelGenerator|InfoPoint|Admin|Sap)\]/i);
+    if (m) { acc[m[1]] = (acc[m[1]] ?? 0) + 1; }
+    return acc;
+  }, {});
+
+  const filteredLines = lines.filter(l => {
+    if (filterLevel === 'error' && !/\[ERR|ERROR/i.test(l)) return false;
+    if (filterLevel === 'warn' && !/\[WRN|WARN|ERR|ERROR/i.test(l)) return false;
+    if (searchText && !l.toLowerCase().includes(searchText.toLowerCase())) return false;
+    return true;
+  });
+
+  function lineColor(line: string): string {
+    if (/\[ERR|ERROR|Exception/i.test(line)) return 'var(--sapNegativeColor)';
+    if (/\[WRN|WARN/i.test(line)) return 'var(--sapCriticalColor)';
+    return 'inherit';
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', padding: '0.5rem' }}>
+      <Toolbar>
+        <Label>Zeilen:</Label>
+        <Select style={{ marginLeft: '0.5rem' }}
+          onChange={(e: any) => setLineCount(Number(e.detail.selectedOption.value))}>
+          {[100, 200, 500, 1000].map(n => <Option key={n} value={String(n)} selected={n === lineCount}>{n}</Option>)}
+        </Select>
+        <Label style={{ marginLeft: '1rem' }}>Filter:</Label>
+        <Select style={{ marginLeft: '0.5rem' }}
+          onChange={(e: any) => setFilterLevel(e.detail.selectedOption.value)}>
+          <Option value="all" selected={filterLevel === 'all'}>Alle</Option>
+          <Option value="warn" selected={filterLevel === 'warn'}>Fehler + Warnungen</Option>
+          <Option value="error" selected={filterLevel === 'error'}>Nur Fehler</Option>
+        </Select>
+        <Input
+          placeholder="Suchen..."
+          value={searchText}
+          onInput={(e: any) => setSearchText(e.target.value)}
+          style={{ marginLeft: '0.5rem', width: 180 }}
+        />
+        <ToolbarSpacer />
+        <Button icon="bar-chart" design="Transparent" onClick={() => setShowAnalysis(s => !s)}>
+          {showAnalysis ? 'Log verbergen' : 'Auswertung'}
+        </Button>
+        <Button icon="refresh" onClick={fetchLogs} disabled={loading}>Aktualisieren</Button>
+      </Toolbar>
+
+      {/* Log Analysis Panel */}
+      {showAnalysis && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '0.75rem', padding: '0.75rem', background: 'var(--sapNeutralBackground)', borderRadius: '0.25rem' }}>
+          <div style={{ textAlign: 'center', padding: '0.5rem', border: '1px solid var(--sapNegativeColor)', borderRadius: '0.25rem' }}>
+            <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--sapNegativeColor)' }}>{errorLines.length}</div>
+            <div style={{ fontSize: '0.8rem' }}>Fehler</div>
+          </div>
+          <div style={{ textAlign: 'center', padding: '0.5rem', border: '1px solid var(--sapCriticalColor)', borderRadius: '0.25rem' }}>
+            <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--sapCriticalColor)' }}>{warnLines.length}</div>
+            <div style={{ fontSize: '0.8rem' }}>Warnungen</div>
+          </div>
+          <div style={{ textAlign: 'center', padding: '0.5rem', border: '1px solid var(--sapPositiveColor)', borderRadius: '0.25rem' }}>
+            <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'var(--sapPositiveColor)' }}>{lines.length - errorLines.length - warnLines.length}</div>
+            <div style={{ fontSize: '0.8rem' }}>Info/Debug</div>
+          </div>
+          <div style={{ gridColumn: '4', padding: '0.5rem', border: '1px solid var(--sapNeutralBorderColor)', borderRadius: '0.25rem' }}>
+            <div style={{ fontSize: '0.75rem', fontWeight: 'bold', marginBottom: '0.25rem' }}>Aktivste Module</div>
+            {Object.entries(moduleStats).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([m, c]) => (
+              <div key={m} style={{ fontSize: '0.75rem', display: 'flex', justifyContent: 'space-between' }}>
+                <span>{m}</span><Badge colorScheme="1">{c}</Badge>
+              </div>
+            ))}
+          </div>
+          {errorLines.length > 0 && (
+            <div style={{ gridColumn: '1/-1', padding: '0.5rem', background: 'var(--sapErrorBackground)', borderRadius: '0.25rem' }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--sapNegativeColor)', marginBottom: '0.25rem' }}>Letzte Fehler</div>
+              {errorLines.slice(-3).map((l, i) => (
+                <div key={i} style={{ fontFamily: 'monospace', fontSize: '0.72rem', color: 'var(--sapNegativeColor)', marginBottom: '0.2rem' }}>{l.slice(0, 200)}</div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {error && <MessageStrip design="Negative">{error}</MessageStrip>}
+
+      {loading ? <BusyIndicator active /> : (
+        <div style={{
+          height: 500, overflowY: 'auto',
+          fontFamily: 'monospace', fontSize: '0.78rem',
+          border: '1px solid var(--sapNeutralBorderColor)',
+          borderRadius: '0.25rem', padding: '0.5rem',
+          background: 'var(--sapBaseColor)',
+        }}>
+          {filteredLines.length === 0
+            ? <div style={{ color: 'var(--sapNeutralColor)', padding: '1rem', textAlign: 'center' }}>Keine Einträge</div>
+            : filteredLines.map((line, i) => (
+              <div key={i} style={{ color: lineColor(line), padding: '1px 0', borderBottom: '1px solid var(--sapList_BorderColor)', wordBreak: 'break-all' }}>
+                {line}
+              </div>
+            ))
+          }
+        </div>
+      )}
+
+      <div style={{ fontSize: '0.8rem', color: 'var(--sapNeutralColor)' }}>
+        {filteredLines.length} / {lines.length} Zeilen angezeigt
+      </div>
+    </div>
+  );
+}
+
+// ─── Analytics Tab ────────────────────────────────────────────────────────────
+function AnalyticsTab() {
+  const { accessToken } = useSelector((s: RootState) => s.auth);
+  const { selectedTenantId, selectedInstanceId } = useSelector((s: RootState) => s.tenant);
+  const [userPerf, setUserPerf] = useState<any[]>([]);
+  const [moduleUsage, setModuleUsage] = useState<any[]>([]);
+  const [dailyActivity, setDailyActivity] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [days, setDays] = useState(30);
+
+  const authHeaders = {
+    Authorization: `Bearer ${accessToken}`,
+    'X-Tenant-Id': String(selectedTenantId ?? ''),
+    'X-Instance-Id': String(selectedInstanceId ?? ''),
+  };
+
+  async function fetchAnalytics() {
+    if (!selectedTenantId) return;
+    setLoading(true);
+    try {
+      const [perfRes, moduleRes, dailyRes] = await Promise.all([
+        fetch(`${API_BASE}/analytics/user-performance`, { headers: authHeaders }),
+        fetch(`${API_BASE}/analytics/module-usage`, { headers: authHeaders }),
+        fetch(`${API_BASE}/analytics/daily-activity?days=${days}`, { headers: authHeaders }),
+      ]);
+      if (perfRes.ok) setUserPerf(await perfRes.json());
+      if (moduleRes.ok) setModuleUsage(await moduleRes.json());
+      if (dailyRes.ok) setDailyActivity(await dailyRes.json());
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => { fetchAnalytics(); }, [selectedTenantId, days]);  // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (loading) return <BusyIndicator active />;
+
+  const maxActions = Math.max(...userPerf.map(u => u.totalActions), 1);
+  const maxModuleActions = Math.max(...moduleUsage.map(m => m.totalActions), 1);
+  const maxDaily = Math.max(...dailyActivity.map(d => d.totalActions), 1);
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', padding: '0.5rem' }}>
+      <Toolbar>
+        <Title level="H5">Performance-Auswertung</Title>
+        <ToolbarSpacer />
+        <Label>Zeitraum:</Label>
+        <Select style={{ marginLeft: '0.5rem' }}
+          onChange={(e: any) => setDays(Number(e.detail.selectedOption.value))}>
+          {[7, 14, 30, 90].map(d => <Option key={d} value={String(d)} selected={d === days}>Letzte {d} Tage</Option>)}
+        </Select>
+        <Button icon="refresh" onClick={fetchAnalytics} style={{ marginLeft: '0.5rem' }}>Aktualisieren</Button>
+      </Toolbar>
+
+      {/* Daily Activity Chart (bar chart using CSS) */}
+      <div>
+        <Title level="H6">Tagesaktivität (letzte {days} Tage)</Title>
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: '2px', height: 100, padding: '0.5rem', background: 'var(--sapNeutralBackground)', borderRadius: '0.25rem', overflowX: 'auto' }}>
+          {dailyActivity.map((d: any, i) => (
+            <div key={i} title={`${d.date?.slice(0, 10)}: ${d.totalActions} Aktionen`} style={{
+              flex: '0 0 auto', width: 8,
+              height: `${Math.max(2, (d.totalActions / maxDaily) * 90)}%`,
+              background: d.errors > 0 ? 'var(--sapNegativeColor)' : 'var(--sapPositiveColor)',
+              borderRadius: '2px 2px 0 0',
+            }} />
+          ))}
+        </div>
+        <div style={{ fontSize: '0.75rem', color: 'var(--sapNeutralColor)', marginTop: '0.25rem' }}>
+          Grün = normal, Rot = Fehler vorhanden
+        </div>
+      </div>
+
+      {/* User Performance */}
+      <div>
+        <Title level="H6">Benutzer-Performance</Title>
+        {userPerf.length === 0
+          ? <Text style={{ color: 'var(--sapNeutralColor)' }}>Noch keine Aktivitätsdaten vorhanden</Text>
+          : (
+            <Table columns={<><TableColumn>Benutzer</TableColumn><TableColumn>Aktionen</TableColumn><TableColumn>Fehler</TableColumn><TableColumn>Letzte Aktivität</TableColumn><TableColumn>Module</TableColumn></>}>
+              {userPerf.map((u: any) => (
+                <TableRow key={u.userId}>
+                  <TableCell><strong>{u.userName}</strong></TableCell>
+                  <TableCell>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <div style={{ height: 8, width: `${(u.totalActions / maxActions) * 100}px`, maxWidth: 100, background: 'var(--sapPositiveColor)', borderRadius: 4 }} />
+                      {u.totalActions}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {u.errorCount > 0
+                      ? <Badge colorScheme="1">{u.errorCount}</Badge>
+                      : <Badge colorScheme="8">0</Badge>
+                    }
+                  </TableCell>
+                  <TableCell>{new Date(u.lastActivity).toLocaleString('de-DE')}</TableCell>
+                  <TableCell>
+                    <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
+                      {Object.entries(u.actionsByModule ?? {}).slice(0, 4).map(([m, c]: any) => (
+                        <Badge key={m} colorScheme="6">{m}: {c}</Badge>
+                      ))}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </Table>
+          )
+        }
+      </div>
+
+      {/* Module Usage */}
+      <div>
+        <Title level="H6">Modul-Nutzung</Title>
+        {moduleUsage.length === 0
+          ? <Text style={{ color: 'var(--sapNeutralColor)' }}>Noch keine Moduldaten vorhanden</Text>
+          : (
+            <Table columns={<><TableColumn>Modul</TableColumn><TableColumn>Aktionen</TableColumn><TableColumn>Aktive Nutzer</TableColumn><TableColumn>Fehler</TableColumn></>}>
+              {moduleUsage.map((m: any) => (
+                <TableRow key={m.module}>
+                  <TableCell><strong>{m.module}</strong></TableCell>
+                  <TableCell>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <div style={{ height: 8, width: `${(m.totalActions / maxModuleActions) * 100}px`, maxWidth: 100, background: 'var(--sapInformativeColor)', borderRadius: 4 }} />
+                      {m.totalActions}
+                    </div>
+                  </TableCell>
+                  <TableCell>{m.uniqueUsers}</TableCell>
+                  <TableCell>{m.errors > 0 ? <Badge colorScheme="1">{m.errors}</Badge> : <Badge colorScheme="8">0</Badge>}</TableCell>
+                </TableRow>
+              ))}
+            </Table>
+          )
+        }
+      </div>
+    </div>
+  );
+}
+
+// ─── Master Data Sync Tab ─────────────────────────────────────────────────────
+const SYNC_TYPES = [
+  { key: 'items',            label: 'Artikel (Items)',          endpoint: 'sync/items' },
+  { key: 'warehouses',       label: 'Lager (Warehouses)',       endpoint: 'sync/warehouses' },
+  { key: 'businesspartners', label: 'Geschäftspartner (BP)',     endpoint: 'sync/businesspartners' },
+] as const;
+
+function MasterDataTab() {
+  const { accessToken } = useSelector((s: RootState) => s.auth);
+  const { selectedTenantId, selectedInstanceId } = useSelector((s: RootState) => s.tenant);
+  const [syncing, setSyncing] = useState<string | null>(null);
+  const [results, setResults] = useState<Record<string, { ok: boolean; msg: string }>>({});
+
+  async function syncOne(type: { key: string; endpoint: string; label: string }) {
+    if (!selectedInstanceId || !selectedTenantId) {
+      setResults(r => ({ ...r, [type.key]: { ok: false, msg: 'Kein Mandant / keine Instanz ausgewählt' } }));
+      return;
+    }
+    setSyncing(type.key);
+    try {
+      const res = await fetch(
+        `${API_BASE}/masterdata/${type.endpoint}?tenantId=${selectedTenantId}`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization:   `Bearer ${accessToken}`,
+            'X-Instance-Id': String(selectedInstanceId),
+            'X-Tenant-Id':   String(selectedTenantId),
+          },
+        }
+      );
+      const body = await res.json().catch(() => ({}));
+      setResults(r => ({ ...r, [type.key]: { ok: res.ok, msg: res.ok ? body.message ?? 'OK' : body.message ?? 'Fehler' } }));
+    } catch (e: any) {
+      setResults(r => ({ ...r, [type.key]: { ok: false, msg: e.message } }));
+    } finally {
+      setSyncing(null);
+    }
+  }
+
+  async function syncAll() {
+    for (const type of SYNC_TYPES) await syncOne(type);
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '0.5rem' }}>
+      <Toolbar>
+        <Title level="H5">SAP-Stammdaten in den lokalen Cache synchronisieren</Title>
+        <ToolbarSpacer />
+        <Button icon="synchronize" design="Emphasized" disabled={!!syncing} onClick={syncAll}>
+          Alle synchronisieren
+        </Button>
+      </Toolbar>
+      <Table columns={<><TableColumn>Datentyp</TableColumn><TableColumn>Status</TableColumn><TableColumn /></>}>
+        {SYNC_TYPES.map(type => (
+          <TableRow key={type.key}>
+            <TableCell>{type.label}</TableCell>
+            <TableCell>
+              {results[type.key] && (
+                <Badge colorScheme={results[type.key].ok ? '8' : '1'}>
+                  {results[type.key].msg}
+                </Badge>
+              )}
+            </TableCell>
+            <TableCell>
+              <Button design="Transparent" icon="download" disabled={syncing === type.key}
+                onClick={() => syncOne(type)}>
+                {syncing === type.key ? 'Lädt…' : 'Sync'}
+              </Button>
+            </TableCell>
+          </TableRow>
+        ))}
+      </Table>
+    </div>
+  );
+}
+
+// ─── Groups & Permissions Tab ─────────────────────────────────────────────────
+const ALL_MODULES = ['Pick', 'Pack', 'InventoryCount', 'InventoryTransfer', 'StockTransfer', 'PurchaseDelivery', 'PurchaseDeliveryAdhoc', 'SalesDelivery', 'LabelGenerator', 'InfoPoint'];
+
+function GroupsTab() {
+  const { accessToken } = useSelector((s: RootState) => s.auth);
+  const { selectedTenantId, selectedInstanceId } = useSelector((s: RootState) => s.tenant);
+  const { data: groups, loading, setData } = useAdminFetch<any[]>('/groups', [selectedTenantId]);
+  const { data: users } = useAdminFetch<any[]>('/users');
+
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showPermDialog, setShowPermDialog] = useState<any>(null);
+  const [form, setForm] = useState({ name: '', description: '' });
+  const [perms, setPerms] = useState<Record<string, { canView: boolean; canEdit: boolean; canBook: boolean }>>({});
+  const [msg, setMsg] = useState<string | null>(null);
+
+  function openPermDialog(group: any) {
+    const permMap: Record<string, { canView: boolean; canEdit: boolean; canBook: boolean }> = {};
+    for (const m of ALL_MODULES) {
+      const existing = group.modulePermissions?.find((p: any) => p.module === m);
+      permMap[m] = existing
+        ? { canView: existing.canView, canEdit: existing.canEdit, canBook: existing.canBook }
+        : { canView: false, canEdit: false, canBook: false };
+    }
+    setPerms(permMap);
+    setShowPermDialog(group);
+  }
+
+  async function createGroup() {
+    const res = await fetch(`${API_BASE}/groups`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+        'X-Tenant-Id': String(selectedTenantId),
+        'X-Instance-Id': String(selectedInstanceId ?? ''),
+      },
+      body: JSON.stringify(form),
+    });
+    if (res.ok) {
+      const created = await res.json();
+      setData((prev: any) => [...(prev ?? []), created]);
+      setMsg('Gruppe erstellt');
+      setShowCreateDialog(false);
+      setForm({ name: '', description: '' });
+    } else {
+      setMsg('Fehler beim Erstellen');
+    }
+  }
+
+  async function savePermissions() {
+    if (!showPermDialog) return;
+    const permList = Object.entries(perms).map(([module, p]) => ({ module, ...p }));
+    await fetch(`${API_BASE}/groups/${showPermDialog.id}/permissions`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+        'X-Tenant-Id': String(selectedTenantId),
+        'X-Instance-Id': String(selectedInstanceId ?? ''),
+      },
+      body: JSON.stringify(permList),
+    });
+    setMsg('Berechtigungen gespeichert');
+    setShowPermDialog(null);
+  }
+
+  async function addMember(groupId: number, userId: number) {
+    await fetch(`${API_BASE}/groups/${groupId}/members`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${accessToken}`,
+        'X-Tenant-Id': String(selectedTenantId),
+        'X-Instance-Id': String(selectedInstanceId ?? ''),
+      },
+      body: JSON.stringify({ userId }),
+    });
+    // Refresh groups
+    const res = await fetch(`${API_BASE}/groups`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'X-Tenant-Id': String(selectedTenantId ?? ''),
+        'X-Instance-Id': String(selectedInstanceId ?? ''),
+      },
+    });
+    if (res.ok) setData(await res.json());
+  }
+
+  async function deleteGroup(id: number) {
+    if (!confirm('Gruppe wirklich löschen?')) return;
+    await fetch(`${API_BASE}/groups/${id}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    setData((prev: any) => (prev ?? []).filter((g: any) => g.id !== id));
+  }
+
+  if (loading) return <BusyIndicator active />;
+
+  return (
+    <div>
+      {msg && <MessageStrip design="Information" onClose={() => setMsg(null)}>{msg}</MessageStrip>}
+      <Toolbar>
+        <Title level="H5">Gruppen &amp; Berechtigungen</Title>
+        <ToolbarSpacer />
+        <Button icon="add" onClick={() => setShowCreateDialog(true)}>Gruppe erstellen</Button>
+      </Toolbar>
+
+      {(groups ?? []).length === 0 && (
+        <MessageStrip design="Information" hideCloseButton style={{ marginTop: '0.5rem' }}>
+          Keine Gruppen vorhanden. Erstellen Sie eine Gruppe um Benutzer mit individuellen Modulberechtigungen zu versehen.
+        </MessageStrip>
+      )}
+
+      {(groups ?? []).map((group: any) => (
+        <div key={group.id} style={{
+          marginTop: '1rem', border: '1px solid var(--sapNeutralBorderColor)',
+          borderRadius: '0.25rem', padding: '1rem',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+            <Title level="H6" style={{ flex: 1 }}>{group.name}</Title>
+            {group.description && <span style={{ color: 'var(--sapNeutralColor)', fontSize: '0.875rem' }}>{group.description}</span>}
+            <Button design="Transparent" icon="permission" onClick={() => openPermDialog(group)}>Berechtigungen</Button>
+            <Button design="Transparent" icon="delete" onClick={() => deleteGroup(group.id)} />
+          </div>
+
+          <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
+            {(group.modulePermissions ?? []).map((p: any) => (
+              <Badge key={p.module} colorScheme={p.canBook ? '8' : p.canEdit ? '2' : '6'}>
+                {p.module}: {p.canBook ? 'Buchen' : p.canEdit ? 'Bearbeiten' : 'Ansehen'}
+              </Badge>
+            ))}
+          </div>
+
+          <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap', alignItems: 'center' }}>
+            <Label>Mitglieder:</Label>
+            {(group.members ?? []).map((m: any) => (
+              <Badge key={m.userId} colorScheme="1">{m.displayName}</Badge>
+            ))}
+            <Select
+              style={{ minWidth: 150 }}
+              onChange={async (e: any) => {
+                const uid = Number(e.detail.selectedOption.value);
+                if (uid) await addMember(group.id, uid);
+              }}
+            >
+              <Option value="">+ Mitglied hinzufügen</Option>
+              {(users ?? [])
+                .filter((u: any) => !(group.members ?? []).some((m: any) => m.userId === u.id))
+                .map((u: any) => <Option key={u.id} value={String(u.id)}>{u.displayName}</Option>)
+              }
+            </Select>
+          </div>
+        </div>
+      ))}
+
+      {/* Create Dialog */}
+      <Dialog open={showCreateDialog} headerText="Gruppe erstellen"
+        footer={<Bar endContent={<><Button design="Emphasized" onClick={createGroup}>Erstellen</Button><Button onClick={() => setShowCreateDialog(false)}>Abbrechen</Button></>} />}>
+        <div style={{ padding: '1rem', minWidth: 320, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+          <Label>Name</Label>
+          <Input value={form.name} onInput={(e: any) => setForm(p => ({ ...p, name: e.target.value }))} placeholder="z.B. Buchhaltung" />
+          <Label>Beschreibung</Label>
+          <Input value={form.description} onInput={(e: any) => setForm(p => ({ ...p, description: e.target.value }))} placeholder="Optional" />
+        </div>
+      </Dialog>
+
+      {/* Permissions Dialog */}
+      {showPermDialog && (
+        <Dialog open headerText={`Berechtigungen – ${showPermDialog.name}`}
+          footer={<Bar endContent={<><Button design="Emphasized" onClick={savePermissions}>Speichern</Button><Button onClick={() => setShowPermDialog(null)}>Abbrechen</Button></>} />}>
+          <div style={{ padding: '1rem', minWidth: 480 }}>
+            <Table columns={<><TableColumn>Modul</TableColumn><TableColumn>Ansehen</TableColumn><TableColumn>Bearbeiten</TableColumn><TableColumn>Buchen</TableColumn></>}>
+              {ALL_MODULES.map(module => (
+                <TableRow key={module}>
+                  <TableCell><strong>{module}</strong></TableCell>
+                  <TableCell>
+                    <input type="checkbox"
+                      checked={perms[module]?.canView ?? false}
+                      onChange={e => setPerms(p => ({ ...p, [module]: { ...p[module], canView: e.target.checked } }))}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <input type="checkbox"
+                      checked={perms[module]?.canEdit ?? false}
+                      onChange={e => setPerms(p => ({ ...p, [module]: { ...p[module], canEdit: e.target.checked } }))}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <input type="checkbox"
+                      checked={perms[module]?.canBook ?? false}
+                      onChange={e => setPerms(p => ({ ...p, [module]: { ...p[module], canBook: e.target.checked } }))}
+                    />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </Table>
+          </div>
+        </Dialog>
+      )}
+    </div>
+  );
+}
+
+// ─── Main AdminPage ───────────────────────────────────────────────────────────
+export function AdminPage() {
+  return (
+    <div>
+      <Title level="H3" style={{ marginBottom: '1rem' }}>Administration</Title>
+      <TabContainer>
+        <Tab text="Instanzen" icon="it-system" selected><InstancesTab /></Tab>
+        <Tab text="Mandanten" icon="business-objects-experience"><TenantsTab /></Tab>
+        <Tab text="Benutzer" icon="employee"><UsersTab /></Tab>
+        <Tab text="Gruppen" icon="group"><GroupsTab /></Tab>
+        <Tab text="Drucker" icon="print"><PrintersTab /></Tab>
+        <Tab text="Module" icon="grid"><ModuleConfigTab /></Tab>
+        <Tab text="Label-Vorlagen" icon="print-2"><LabelTemplatesTab /></Tab>
+        <Tab text="Stammdaten" icon="cloud-download"><MasterDataTab /></Tab>
+        <Tab text="Offline-Sync" icon="synchronize"><SyncTab /></Tab>
+        <Tab text="Analytics" icon="bar-chart"><AnalyticsTab /></Tab>
+        <Tab text="SQL-Tool" icon="database"><SqlTab /></Tab>
+        <Tab text="Logs" icon="document-text"><LogsTab /></Tab>
+      </TabContainer>
+    </div>
+  );
+}

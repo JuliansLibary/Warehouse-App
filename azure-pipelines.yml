@@ -1,0 +1,247 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# Azure DevOps CI/CD Pipeline – Warehouse App
+#
+# Stages:
+#   1. build-backend  – dotnet restore, build, test, publish artefact
+#   2. build-frontend – npm ci, tsc, vite build, publish artefact
+#   3. docker-build   – build & push backend + frontend images to ACR
+#   4. deploy-staging – deploy to staging environment (via docker-compose)
+#   5. deploy-prod    – manual approval gate → deploy to production
+#
+# Required pipeline variables (set in Azure DevOps Library):
+#   ACR_NAME            – Azure Container Registry name (e.g. myacr)
+#   ACR_SERVICE_CONN    – Azure service connection with push rights
+#   SSH_HOST_STAGING    – SSH host for staging server
+#   SSH_HOST_PROD       – SSH host for production server
+#   SSH_USER            – SSH username
+#   SSH_KEY             – SSH private key (secret)
+#   POSTGRES_PASSWORD   – DB password (secret)
+#   KC_ADMIN_PASSWORD   – Keycloak admin password (secret)
+# ──────────────────────────────────────────────────────────────────────────────
+
+trigger:
+  branches:
+    include:
+      - main
+      - develop
+      - 'release/*'
+  paths:
+    exclude:
+      - '*.md'
+      - 'docs/**'
+
+pr:
+  branches:
+    include:
+      - main
+      - develop
+
+variables:
+  imageTag:   $(Build.BuildId)
+  backendImg: $(ACR_NAME).azurecr.io/warehouse-backend
+  frontendImg: $(ACR_NAME).azurecr.io/warehouse-frontend
+  dotnetVersion: '8.0.x'
+  nodeVersion:   '20.x'
+
+# ── Stage 1 – Backend ─────────────────────────────────────────────────────────
+stages:
+- stage: BuildBackend
+  displayName: 'Build & Test Backend (.NET 8)'
+  pool:
+    vmImage: ubuntu-latest
+  jobs:
+  - job: BuildDotnet
+    displayName: 'dotnet build + test'
+    steps:
+    - task: UseDotNet@2
+      displayName: 'Install .NET $(dotnetVersion)'
+      inputs:
+        version: $(dotnetVersion)
+        packageType: sdk
+
+    - task: DotNetCoreCLI@2
+      displayName: 'Restore NuGet packages'
+      inputs:
+        command: restore
+        projects: 'backend/WarehouseApp.sln'
+
+    - task: DotNetCoreCLI@2
+      displayName: 'Build solution'
+      inputs:
+        command: build
+        projects: 'backend/WarehouseApp.sln'
+        arguments: '--configuration Release --no-restore'
+
+    - task: DotNetCoreCLI@2
+      displayName: 'Run tests'
+      inputs:
+        command: test
+        projects: 'backend/**/*.Tests.csproj'
+        arguments: '--configuration Release --no-build --collect:"XPlat Code Coverage"'
+      continueOnError: true   # tests folder may not exist yet
+
+    - task: DotNetCoreCLI@2
+      displayName: 'Publish API'
+      inputs:
+        command: publish
+        publishWebProjects: false
+        projects: 'backend/WarehouseApp.API/WarehouseApp.API.csproj'
+        arguments: '--configuration Release --output $(Build.ArtifactStagingDirectory)/backend'
+        zipAfterPublish: true
+
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish backend artefact'
+      inputs:
+        PathtoPublish: $(Build.ArtifactStagingDirectory)/backend
+        ArtifactName: backend-drop
+
+# ── Stage 2 – Frontend ────────────────────────────────────────────────────────
+- stage: BuildFrontend
+  displayName: 'Build Frontend (React/Vite)'
+  dependsOn: []    # run in parallel with backend
+  pool:
+    vmImage: ubuntu-latest
+  jobs:
+  - job: BuildNode
+    displayName: 'npm ci + vite build'
+    steps:
+    - task: NodeTool@0
+      displayName: 'Use Node.js $(nodeVersion)'
+      inputs:
+        versionSpec: $(nodeVersion)
+
+    - script: npm ci --frozen-lockfile
+      displayName: 'Install dependencies'
+      workingDirectory: frontend
+
+    - script: npm run build
+      displayName: 'Vite build (TypeScript + bundle)'
+      workingDirectory: frontend
+
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish frontend artefact'
+      inputs:
+        PathtoPublish: frontend/dist
+        ArtifactName: frontend-dist
+
+# ── Stage 3 – Docker Build & Push ────────────────────────────────────────────
+- stage: DockerBuild
+  displayName: 'Docker Build & Push to ACR'
+  dependsOn:
+    - BuildBackend
+    - BuildFrontend
+  condition: and(succeeded('BuildBackend'), succeeded('BuildFrontend'))
+  pool:
+    vmImage: ubuntu-latest
+  jobs:
+  - job: PushImages
+    displayName: 'Build and push images'
+    steps:
+    - task: AzureCLI@2
+      displayName: 'Login to ACR'
+      inputs:
+        azureSubscription: $(ACR_SERVICE_CONN)
+        scriptType: bash
+        scriptLocation: inlineScript
+        inlineScript: |
+          az acr login --name $(ACR_NAME)
+
+    - task: Docker@2
+      displayName: 'Build & push backend image'
+      inputs:
+        containerRegistry: $(ACR_SERVICE_CONN)
+        repository: warehouse-backend
+        command: buildAndPush
+        Dockerfile: backend/WarehouseApp.API/Dockerfile
+        buildContext: backend
+        tags: |
+          $(imageTag)
+          latest
+
+    - task: Docker@2
+      displayName: 'Build & push frontend image'
+      inputs:
+        containerRegistry: $(ACR_SERVICE_CONN)
+        repository: warehouse-frontend
+        command: buildAndPush
+        Dockerfile: frontend/Dockerfile
+        buildContext: frontend
+        tags: |
+          $(imageTag)
+          latest
+
+# ── Stage 4 – Deploy Staging ──────────────────────────────────────────────────
+- stage: DeployStaging
+  displayName: 'Deploy to Staging'
+  dependsOn: DockerBuild
+  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+  pool:
+    vmImage: ubuntu-latest
+  jobs:
+  - deployment: StagingDeploy
+    displayName: 'SSH deploy to staging'
+    environment: staging
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: InstallSSHKey@0
+            displayName: 'Install SSH key'
+            inputs:
+              knownHostsEntry: $(SSH_KNOWN_HOSTS)
+              sshKeySecureFile: id_rsa
+
+          - script: |
+              ssh -o StrictHostKeyChecking=no $(SSH_USER)@$(SSH_HOST_STAGING) << 'EOF'
+                cd /opt/warehouse-app
+                export POSTGRES_PASSWORD="$(POSTGRES_PASSWORD)"
+                export KC_ADMIN_PASSWORD="$(KC_ADMIN_PASSWORD)"
+                export BACKEND_IMAGE="$(backendImg):$(imageTag)"
+                export FRONTEND_IMAGE="$(frontendImg):$(imageTag)"
+                docker pull $BACKEND_IMAGE
+                docker pull $FRONTEND_IMAGE
+                docker compose up -d --no-build backend frontend nginx
+                docker system prune -f --filter "until=72h"
+              EOF
+            displayName: 'Pull images and restart services'
+            env:
+              POSTGRES_PASSWORD:    $(POSTGRES_PASSWORD)
+              KC_ADMIN_PASSWORD:    $(KC_ADMIN_PASSWORD)
+
+# ── Stage 5 – Deploy Production ───────────────────────────────────────────────
+- stage: DeployProduction
+  displayName: 'Deploy to Production'
+  dependsOn: DeployStaging
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  pool:
+    vmImage: ubuntu-latest
+  jobs:
+  - deployment: ProdDeploy
+    displayName: 'SSH deploy to production'
+    environment: production   # requires manual approval in Azure DevOps
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: InstallSSHKey@0
+            displayName: 'Install SSH key'
+            inputs:
+              knownHostsEntry: $(SSH_KNOWN_HOSTS)
+              sshKeySecureFile: id_rsa
+
+          - script: |
+              ssh -o StrictHostKeyChecking=no $(SSH_USER)@$(SSH_HOST_PROD) << 'EOF'
+                cd /opt/warehouse-app
+                export POSTGRES_PASSWORD="$(POSTGRES_PASSWORD)"
+                export KC_ADMIN_PASSWORD="$(KC_ADMIN_PASSWORD)"
+                export BACKEND_IMAGE="$(backendImg):$(imageTag)"
+                export FRONTEND_IMAGE="$(frontendImg):$(imageTag)"
+                docker pull $BACKEND_IMAGE
+                docker pull $FRONTEND_IMAGE
+                docker compose up -d --no-build backend frontend nginx
+                docker system prune -f --filter "until=72h"
+              EOF
+            displayName: 'Pull images and restart services (production)'
+            env:
+              POSTGRES_PASSWORD:    $(POSTGRES_PASSWORD)
+              KC_ADMIN_PASSWORD:    $(KC_ADMIN_PASSWORD)

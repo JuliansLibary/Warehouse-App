@@ -1,0 +1,310 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "new": "New",
+    "refresh": "Refresh",
+    "loading": "Loading...",
+    "error": "Error",
+    "back": "Back",
+    "close": "Close",
+    "confirm": "Confirm",
+    "yes": "Yes",
+    "no": "No",
+    "search": "Search",
+    "noData": "No data available",
+    "actions": "Actions",
+    "status": "Status",
+    "name": "Name",
+    "description": "Description",
+    "date": "Date",
+    "quantity": "Quantity",
+    "print": "Print",
+    "scan": "Scan",
+    "book": "Post",
+    "copies": "Copies",
+    "type": "Type",
+    "language": "Language"
+  },
+  "nav": {
+    "launchpad": "Launchpad",
+    "pick": "Picking",
+    "pack": "Packing",
+    "inventoryCount": "Inventory Count",
+    "inventoryTransfer": "Inventory Transfer",
+    "stockTransfer": "Stock Transfer",
+    "purchaseDelivery": "Goods Receipt",
+    "purchaseDeliveryAdhoc": "Goods Receipt Adhoc",
+    "salesDelivery": "Goods Issue",
+    "labelGenerator": "Labels",
+    "infoPoint": "InfoPoint",
+    "admin": "Admin"
+  },
+  "auth": {
+    "login": "Login",
+    "logout": "Logout",
+    "username": "Username",
+    "password": "Password",
+    "loginWithKeycloak": "Login with Keycloak",
+    "loginError": "Login failed",
+    "loggedInAs": "Logged in as"
+  },
+  "offline": {
+    "offlineMode": "Offline Mode",
+    "offlineMessage": "You are offline. Your input will be saved and automatically synced when you are back online.",
+    "syncInProgress": "Syncing... ({{count}} actions pending)",
+    "syncErrors": "{{count}} action(s) could not be synced.",
+    "savedOffline": "Saved offline – will sync when online"
+  },
+  "pick": {
+    "title": "Picking",
+    "pickList": "Pick List",
+    "scanArticle": "Scan item:",
+    "scanPlaceholder": "Scan or enter barcode / item number",
+    "articleNotFound": "Item \"{{code}}\" not found in this pick list",
+    "fullyPicked": "✓ {{code}} fully picked",
+    "remaining": "{{code}}: {{count}} piece(s) remaining",
+    "saved": "Pick list saved successfully",
+    "saveError": "Error saving: {{error}}",
+    "loading": "Loading pick list...",
+    "columns": {
+      "item": "Item",
+      "description": "Description",
+      "location": "Location",
+      "open": "Open",
+      "picked": "Picked",
+      "status": "Status"
+    },
+    "status": {
+      "done": "Done",
+      "open": "Open"
+    },
+    "serialNumbers": "Serial Numbers",
+    "addSerial": "Add serial number",
+    "serialPlaceholder": "Enter or scan serial number",
+    "serialConfirm": "Accept {{count}} serial number(s)"
+  },
+  "pack": {
+    "title": "Packing",
+    "pickList": "Pick List",
+    "package": "Package",
+    "nve": "NVE",
+    "generateNve": "Generate NVE",
+    "addPackage": "Add Package",
+    "book": "Post Goods Issue",
+    "scanArticle": "Scan item:",
+    "articleNotFound": "Item not found",
+    "loading": "Loading pick list..."
+  },
+  "inventory": {
+    "title": "Inventory Count",
+    "openCounts": "Open Counts",
+    "counting": "Counting",
+    "itemCode": "Item",
+    "counted": "Counted",
+    "book": "Post Inventory",
+    "loading": "Loading inventory counts...",
+    "saved": "Inventory posted successfully",
+    "saveError": "Error posting: {{error}}"
+  },
+  "inventoryTransfer": {
+    "title": "Inventory Transfer",
+    "sourceWarehouse": "Source Warehouse",
+    "targetWarehouse": "Target Warehouse",
+    "scanItem": "Scan Item",
+    "transfer": "Post Transfer",
+    "loading": "Loading transfer requests..."
+  },
+  "stockTransfer": {
+    "title": "Stock Transfer Request",
+    "new": "New Transfer",
+    "fromWarehouse": "From Warehouse",
+    "toWarehouse": "To Warehouse",
+    "create": "Create"
+  },
+  "purchaseDelivery": {
+    "title": "Goods Receipt",
+    "purchaseOrder": "Purchase Order",
+    "orderNo": "Order No.",
+    "supplier": "Supplier",
+    "positions": "Lines",
+    "bookReceipt": "Post Goods Receipt",
+    "loading": "Loading order...",
+    "ordersLoading": "Loading orders...",
+    "noOrders": "No open purchase orders",
+    "scanArticle": "Scan item:",
+    "deliveryImage": "Delivery note image (optional):",
+    "imageUploading": "Uploading image...",
+    "booked": "Goods receipt posted successfully",
+    "bookError": "Error: {{error}}",
+    "ordered": "Ordered",
+    "received": "Received",
+    "batch": "Batch",
+    "batches": "Batches",
+    "addBatch": "Add batch"
+  },
+  "salesDelivery": {
+    "title": "Goods Issue",
+    "order": "Order",
+    "orderNo": "Order No.",
+    "customer": "Customer",
+    "open": "Open",
+    "createDelivery": "Create Delivery",
+    "loading": "Loading order...",
+    "ordersLoading": "Loading orders...",
+    "noOrders": "No open orders",
+    "signature": "Signature",
+    "signaturePod": "Signature (POD)",
+    "signHere": "Please sign here:",
+    "clearSignature": "Clear",
+    "booked": "Delivery created successfully",
+    "bookError": "Error: {{error}}",
+    "ordered": "Ordered",
+    "toDeliver": "To deliver",
+    "warehouse": "Warehouse"
+  },
+  "labelGenerator": {
+    "title": "Label Generator",
+    "labelType": "Label Type",
+    "standard": "Standard Item",
+    "nve": "NVE / SSCC-18",
+    "qr": "QR Code",
+    "warehouseLabel": "Warehouse Location",
+    "printer": "Printer",
+    "noPrinters": "No printers configured – browser print available",
+    "browserPrint": "Browser Print",
+    "printerPrint": "Printer",
+    "choosePrinter": "-- Select printer --",
+    "preview": "Preview",
+    "printed": "{{count}} label(s) printed",
+    "printError": "Print error – check printer connection",
+    "choosePrinterFirst": "Please select a printer",
+    "fields": {
+      "itemCode": "Item Code",
+      "itemDescription": "Description",
+      "quantity": "Quantity",
+      "batchNumber": "Batch Number",
+      "serialNumber": "Serial Number",
+      "warehouseCode": "Warehouse Code",
+      "binCode": "Bin Location",
+      "nve": "NVE (18 digits)",
+      "custom": "Custom Content"
+    }
+  },
+  "infoPoint": {
+    "title": "InfoPoint",
+    "search": "Search item or bin location...",
+    "searchButton": "Search",
+    "itemInfo": "Item Information",
+    "binInfo": "Bin Location Information",
+    "stock": "Stock",
+    "serialNumbers": "Serial Numbers",
+    "batches": "Batches"
+  },
+  "admin": {
+    "title": "Administration",
+    "tabs": {
+      "instances": "Instances",
+      "tenants": "Tenants",
+      "users": "Users",
+      "groups": "Groups",
+      "printers": "Printers",
+      "masterData": "Master Data",
+      "labelTemplates": "Label Templates",
+      "modules": "Modules",
+      "offlineSync": "Offline Sync",
+      "logs": "Logs",
+      "sql": "SQL Tool"
+    },
+    "instances": {
+      "create": "Create Instance",
+      "created": "Instance created",
+      "url": "SL URL",
+      "port": "SL Port",
+      "baseUrl": "Base URL",
+      "clientId": "Client ID",
+      "clientSecret": "Client Secret",
+      "authMode": "Auth Mode",
+      "cookie": "Cookie (B1SESSION)",
+      "basicAuth": "Basic Auth"
+    },
+    "tenants": {
+      "create": "Create Tenant",
+      "created": "Tenant created",
+      "database": "Database",
+      "instance": "Instance",
+      "validated": "Validated",
+      "pending": "Pending"
+    },
+    "users": {
+      "role": "Role",
+      "roleUpdated": "Role updated",
+      "roleUpdateError": "Error saving",
+      "roles": {
+        "admin": "Admin",
+        "supervisor": "Supervisor",
+        "warehouse": "Warehouse",
+        "readonly": "ReadOnly",
+        "installationAdmin": "Installation Admin",
+        "instanceAdmin": "Instance Admin",
+        "tenantAdmin": "Tenant Admin"
+      }
+    },
+    "groups": {
+      "title": "Groups & Permissions",
+      "create": "Create Group",
+      "created": "Group created",
+      "groupName": "Group Name",
+      "permissions": "Permissions",
+      "members": "Members",
+      "addMember": "Add Member",
+      "module": "Module",
+      "canView": "View",
+      "canEdit": "Edit",
+      "canBook": "Post",
+      "noGroups": "No groups available"
+    },
+    "masterData": {
+      "syncItems": "Sync Items",
+      "syncWarehouses": "Sync Warehouses",
+      "syncBP": "Sync Business Partners",
+      "syncAll": "Sync All",
+      "syncSuccess": "{{type}} synced successfully ({{count}} records)",
+      "syncError": "Sync error: {{error}}"
+    },
+    "logs": {
+      "refresh": "Reload",
+      "lines": "Lines",
+      "analysis": "Log Analysis",
+      "totalErrors": "Total Errors",
+      "totalWarnings": "Total Warnings",
+      "topModules": "Top Modules",
+      "latestErrors": "Latest Errors"
+    },
+    "sync": {
+      "pending": "Pending",
+      "processAll": "Process All",
+      "status": {
+        "pending": "Pending",
+        "syncing": "Syncing",
+        "done": "Done",
+        "failed": "Failed"
+      }
+    }
+  },
+  "errors": {
+    "generic": "An unexpected error occurred.",
+    "networkError": "Network error – please check your connection.",
+    "notFound": "The requested resource was not found.",
+    "unauthorized": "You are not authorized to perform this action.",
+    "sessionExpired": "Your session has expired. Please log in again.",
+    "boundary": {
+      "title": "Something went wrong",
+      "message": "An error occurred in this module. Other modules are still available.",
+      "reload": "Reload",
+      "details": "Error Details"
+    }
+  }
+}

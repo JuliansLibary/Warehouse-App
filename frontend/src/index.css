@@ -1,0 +1,139 @@
+/* ──────────────────────────────────────────────────────────────────────────────
+   Warehouse App – Global Styles
+   Optimised for SAP Fiori Horizon theme + Zebra TC21 / tablets.
+   The TC21 has a 5.5" 720×1280 screen; users wear gloves → large touch targets.
+   ────────────────────────────────────────────────────────────────────────────── */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  /* SAP 72 font – loaded via @ui5/webcomponents */
+  font-family: '72', '72full', Arial, Helvetica, sans-serif;
+  font-size: 1rem; /* 16px base – comfortable on scanners */
+  background: var(--sapBackgroundColor, #f5f6f7);
+  color: var(--sapTextColor, #32363a);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* Prevent iOS rubber-band scroll which confuses Zebra browsers */
+  overscroll-behavior: contain;
+}
+
+#root {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Touch targets ────────────────────────────────────────────────────────────
+   WCAG 2.5.8 / Zebra best-practice: minimum 44 × 44 px interactive area.
+   UI5 button defaults are usually fine, but scannable rows and icons need help.
+   ──────────────────────────────────────────────────────────────────────────── */
+button,
+[role="button"],
+[ui5-button],
+[ui5-icon],
+input[type="button"],
+input[type="submit"] {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Ensure table row tap areas are comfortable */
+ui5-table-row {
+  min-height: 52px;
+}
+
+/* Bigger scan-input: the main barcode field on every module */
+.scan-input ui5-input::part(input) {
+  font-size: 1.25rem;
+  height: 52px;
+}
+
+/* ── Focus ring ───────────────────────────────────────────────────────────────
+   SAP-style dashed focus for keyboard / scanner Tab navigation.
+   ──────────────────────────────────────────────────────────────────────────── */
+:focus-visible {
+  outline: var(--sapContent_FocusWidth, 2px) dashed var(--sapContent_FocusColor, #0a6ed1);
+  outline-offset: 2px;
+}
+
+/* ── Scrollbars ───────────────────────────────────────────────────────────────
+   Thin scrollbars that don't eat horizontal space on tablets.
+   ──────────────────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--sapScrollBar_FaceColor, #949494);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-track {
+  background: var(--sapScrollBar_TrackColor, #e9eaeb);
+}
+
+/* ── Responsive sidebar breakpoint ───────────────────────────────────────────
+   < 640 px (TC21 portrait): hide sidebar, show hamburger only.
+   ──────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 639px) {
+  .wh-sidebar {
+    display: none !important;
+  }
+  .wh-sidebar.open {
+    display: flex !important;
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    z-index: 1000;
+    background: var(--sapGroup_TitleBackground, #fff);
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.2);
+  }
+  .wh-main-content {
+    padding: 0.5rem !important;
+  }
+}
+
+/* ── Tablet (640 – 1024 px): narrower sidebar ────────────────────────────────*/
+@media (min-width: 640px) and (max-width: 1023px) {
+  .wh-sidebar {
+    width: 56px !important; /* Icon-only */
+  }
+  .wh-sidebar ui5-side-navigation-item::part(text),
+  .wh-sidebar ui5-side-navigation-item::part(expanded-arrow) {
+    display: none;
+  }
+}
+
+/* ── Print styles for labels ─────────────────────────────────────────────────*/
+@media print {
+  .wh-sidebar,
+  ui5-shell-bar,
+  ui5-toolbar {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+  }
+}
+
+/* ── Utility: visually hidden (a11y) ─────────────────────────────────────────*/
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

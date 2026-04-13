@@ -1,0 +1,310 @@
+{
+  "common": {
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "delete": "Löschen",
+    "edit": "Bearbeiten",
+    "new": "Neu",
+    "refresh": "Aktualisieren",
+    "loading": "Wird geladen...",
+    "error": "Fehler",
+    "back": "Zurück",
+    "close": "Schließen",
+    "confirm": "Bestätigen",
+    "yes": "Ja",
+    "no": "Nein",
+    "search": "Suchen",
+    "noData": "Keine Daten vorhanden",
+    "actions": "Aktionen",
+    "status": "Status",
+    "name": "Name",
+    "description": "Bezeichnung",
+    "date": "Datum",
+    "quantity": "Menge",
+    "print": "Drucken",
+    "scan": "Scan",
+    "book": "Buchen",
+    "copies": "Kopien",
+    "type": "Typ",
+    "language": "Sprache"
+  },
+  "nav": {
+    "launchpad": "Launchpad",
+    "pick": "Kommissionierung",
+    "pack": "Verpackung",
+    "inventoryCount": "Inventur",
+    "inventoryTransfer": "Bestandsumlagerung",
+    "stockTransfer": "Umlagerungsanfrage",
+    "purchaseDelivery": "Wareneingang",
+    "purchaseDeliveryAdhoc": "WE Adhoc",
+    "salesDelivery": "Warenausgang",
+    "labelGenerator": "Etiketten",
+    "infoPoint": "InfoPoint",
+    "admin": "Admin"
+  },
+  "auth": {
+    "login": "Anmelden",
+    "logout": "Abmelden",
+    "username": "Benutzername",
+    "password": "Passwort",
+    "loginWithKeycloak": "Mit Keycloak anmelden",
+    "loginError": "Anmeldung fehlgeschlagen",
+    "loggedInAs": "Angemeldet als"
+  },
+  "offline": {
+    "offlineMode": "Offline-Modus",
+    "offlineMessage": "Sie sind offline. Ihre Eingaben werden gespeichert und automatisch synchronisiert, sobald Sie wieder online sind.",
+    "syncInProgress": "Synchronisierung läuft... ({{count}} Aktionen ausstehend)",
+    "syncErrors": "{{count}} Aktion(en) konnten nicht synchronisiert werden.",
+    "savedOffline": "Offline gespeichert – wird synchronisiert wenn online"
+  },
+  "pick": {
+    "title": "Kommissionierung",
+    "pickList": "Pickliste",
+    "scanArticle": "Artikel scannen:",
+    "scanPlaceholder": "Barcode / Artikelnummer scannen oder eingeben",
+    "articleNotFound": "Artikel \"{{code}}\" nicht in dieser Pickliste gefunden",
+    "fullyPicked": "✓ {{code}} vollständig gepickt",
+    "remaining": "{{code}}: noch {{count}} Stück offen",
+    "saved": "Pickliste erfolgreich gespeichert",
+    "saveError": "Fehler beim Speichern: {{error}}",
+    "loading": "Pickliste wird geladen...",
+    "columns": {
+      "item": "Artikel",
+      "description": "Bezeichnung",
+      "location": "Lagerort",
+      "open": "Offen",
+      "picked": "Gepickt",
+      "status": "Status"
+    },
+    "status": {
+      "done": "Fertig",
+      "open": "Offen"
+    },
+    "serialNumbers": "Seriennummern",
+    "addSerial": "Seriennummer hinzufügen",
+    "serialPlaceholder": "Seriennummer eingeben oder scannen",
+    "serialConfirm": "{{count}} Seriennummer(n) übernehmen"
+  },
+  "pack": {
+    "title": "Verpackung",
+    "pickList": "Pickliste",
+    "package": "Paket",
+    "nve": "NVE",
+    "generateNve": "NVE generieren",
+    "addPackage": "Paket hinzufügen",
+    "book": "Warenausgang buchen",
+    "scanArticle": "Artikel scannen:",
+    "articleNotFound": "Artikel nicht gefunden",
+    "loading": "Pickliste wird geladen..."
+  },
+  "inventory": {
+    "title": "Inventur",
+    "openCounts": "Offene Inventuren",
+    "counting": "Zählung",
+    "itemCode": "Artikel",
+    "counted": "Gezählt",
+    "book": "Inventur buchen",
+    "loading": "Inventuren werden geladen...",
+    "saved": "Inventur erfolgreich gebucht",
+    "saveError": "Fehler beim Buchen: {{error}}"
+  },
+  "inventoryTransfer": {
+    "title": "Bestandsumlagerung",
+    "sourceWarehouse": "Quell-Lager",
+    "targetWarehouse": "Ziel-Lager",
+    "scanItem": "Artikel scannen",
+    "transfer": "Umlagerung buchen",
+    "loading": "Umlagerungsanfragen werden geladen..."
+  },
+  "stockTransfer": {
+    "title": "Umlagerungsanfrage",
+    "new": "Neue Umlagerung",
+    "fromWarehouse": "Von Lager",
+    "toWarehouse": "Nach Lager",
+    "create": "Erstellen"
+  },
+  "purchaseDelivery": {
+    "title": "Wareneingang",
+    "purchaseOrder": "Bestellung",
+    "orderNo": "Bestell-Nr.",
+    "supplier": "Lieferant",
+    "positions": "Positionen",
+    "bookReceipt": "Wareneingang buchen",
+    "loading": "Bestellung wird geladen...",
+    "ordersLoading": "Bestellungen werden geladen...",
+    "noOrders": "Keine offenen Bestellungen",
+    "scanArticle": "Artikel scannen:",
+    "deliveryImage": "Lieferschein-Bild (optional):",
+    "imageUploading": "Bild wird hochgeladen...",
+    "booked": "Wareneingang erfolgreich gebucht",
+    "bookError": "Fehler: {{error}}",
+    "ordered": "Bestellt",
+    "received": "Empfangen",
+    "batch": "Charge",
+    "batches": "Chargen",
+    "addBatch": "Charge hinzufügen"
+  },
+  "salesDelivery": {
+    "title": "Warenausgang",
+    "order": "Auftrag",
+    "orderNo": "Auftrags-Nr.",
+    "customer": "Kunde",
+    "open": "Offen",
+    "createDelivery": "Lieferung erstellen",
+    "loading": "Auftrag wird geladen...",
+    "ordersLoading": "Aufträge werden geladen...",
+    "noOrders": "Keine offenen Aufträge",
+    "signature": "Unterschrift",
+    "signaturePod": "Unterschrift (POD)",
+    "signHere": "Bitte hier unterschreiben:",
+    "clearSignature": "Löschen",
+    "booked": "Lieferung erfolgreich erstellt",
+    "bookError": "Fehler: {{error}}",
+    "ordered": "Bestellt",
+    "toDeliver": "Zu liefern",
+    "warehouse": "Lager"
+  },
+  "labelGenerator": {
+    "title": "Etiketten-Generator",
+    "labelType": "Etiketten-Typ",
+    "standard": "Standard-Artikel",
+    "nve": "NVE / SSCC-18",
+    "qr": "QR-Code",
+    "warehouseLabel": "Lagerort",
+    "printer": "Drucker",
+    "noPrinters": "Keine Drucker konfiguriert – Browser-Druck verfügbar",
+    "browserPrint": "Browser-Druck",
+    "printerPrint": "Drucker",
+    "choosePrinter": "-- Drucker wählen --",
+    "preview": "Vorschau",
+    "printed": "{{count}} Etikett(en) gedruckt",
+    "printError": "Druckfehler – Verbindung zum Drucker prüfen",
+    "choosePrinterFirst": "Bitte Drucker auswählen",
+    "fields": {
+      "itemCode": "Artikelnummer",
+      "itemDescription": "Bezeichnung",
+      "quantity": "Menge",
+      "batchNumber": "Chargennummer",
+      "serialNumber": "Seriennummer",
+      "warehouseCode": "Lagercode",
+      "binCode": "Lagerplatz (Bin)",
+      "nve": "NVE (18-stellig)",
+      "custom": "Benutzerdefinierter Inhalt"
+    }
+  },
+  "infoPoint": {
+    "title": "InfoPoint",
+    "search": "Artikel oder Lagerplatz suchen...",
+    "searchButton": "Suche",
+    "itemInfo": "Artikel-Information",
+    "binInfo": "Lagerplatz-Information",
+    "stock": "Bestand",
+    "serialNumbers": "Seriennummern",
+    "batches": "Chargen"
+  },
+  "admin": {
+    "title": "Administration",
+    "tabs": {
+      "instances": "Instanzen",
+      "tenants": "Mandanten",
+      "users": "Benutzer",
+      "groups": "Gruppen",
+      "printers": "Drucker",
+      "masterData": "Stammdaten",
+      "labelTemplates": "Label-Vorlagen",
+      "modules": "Module",
+      "offlineSync": "Offline-Sync",
+      "logs": "Logs",
+      "sql": "SQL-Tool"
+    },
+    "instances": {
+      "create": "Instanz erstellen",
+      "created": "Instanz erstellt",
+      "url": "SL URL",
+      "port": "SL Port",
+      "baseUrl": "Base URL",
+      "clientId": "Client ID",
+      "clientSecret": "Client Secret",
+      "authMode": "Auth-Modus",
+      "cookie": "Cookie (B1SESSION)",
+      "basicAuth": "Basic Auth"
+    },
+    "tenants": {
+      "create": "Mandant erstellen",
+      "created": "Mandant erstellt",
+      "database": "Datenbank",
+      "instance": "Instanz",
+      "validated": "Validiert",
+      "pending": "Ausstehend"
+    },
+    "users": {
+      "role": "Rolle",
+      "roleUpdated": "Rolle aktualisiert",
+      "roleUpdateError": "Fehler beim Speichern",
+      "roles": {
+        "admin": "Admin",
+        "supervisor": "Supervisor",
+        "warehouse": "Lager",
+        "readonly": "ReadOnly",
+        "installationAdmin": "Installation Admin",
+        "instanceAdmin": "Instanz Admin",
+        "tenantAdmin": "Mandanten Admin"
+      }
+    },
+    "groups": {
+      "title": "Gruppen & Berechtigungen",
+      "create": "Gruppe erstellen",
+      "created": "Gruppe erstellt",
+      "groupName": "Gruppenname",
+      "permissions": "Berechtigungen",
+      "members": "Mitglieder",
+      "addMember": "Mitglied hinzufügen",
+      "module": "Modul",
+      "canView": "Ansehen",
+      "canEdit": "Bearbeiten",
+      "canBook": "Buchen",
+      "noGroups": "Keine Gruppen vorhanden"
+    },
+    "masterData": {
+      "syncItems": "Artikel synchronisieren",
+      "syncWarehouses": "Lager synchronisieren",
+      "syncBP": "Geschäftspartner synchronisieren",
+      "syncAll": "Alle synchronisieren",
+      "syncSuccess": "{{type}} erfolgreich synchronisiert ({{count}} Einträge)",
+      "syncError": "Synchronisierungsfehler: {{error}}"
+    },
+    "logs": {
+      "refresh": "Neu laden",
+      "lines": "Zeilen",
+      "analysis": "Log-Auswertung",
+      "totalErrors": "Fehler gesamt",
+      "totalWarnings": "Warnungen gesamt",
+      "topModules": "Top-Module",
+      "latestErrors": "Letzte Fehler"
+    },
+    "sync": {
+      "pending": "Ausstehend",
+      "processAll": "Alle verarbeiten",
+      "status": {
+        "pending": "Ausstehend",
+        "syncing": "Synchronisiert",
+        "done": "Erledigt",
+        "failed": "Fehler"
+      }
+    }
+  },
+  "errors": {
+    "generic": "Ein unerwarteter Fehler ist aufgetreten.",
+    "networkError": "Netzwerkfehler – bitte Verbindung prüfen.",
+    "notFound": "Die angeforderte Ressource wurde nicht gefunden.",
+    "unauthorized": "Sie sind nicht berechtigt, diese Aktion durchzuführen.",
+    "sessionExpired": "Ihre Sitzung ist abgelaufen. Bitte erneut anmelden.",
+    "boundary": {
+      "title": "Etwas ist schiefgelaufen",
+      "message": "In diesem Modul ist ein Fehler aufgetreten. Die anderen Module sind weiterhin verfügbar.",
+      "reload": "Neu laden",
+      "details": "Fehlerdetails"
+    }
+  }
+}
