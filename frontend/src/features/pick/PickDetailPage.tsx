@@ -235,7 +235,7 @@ export function PickDetailPage() {
       </Toolbar>
 
       {lockError && (
-        <MessageStrip design="Warning" style={{ marginBottom: '0.5rem' }}>
+        <MessageStrip design="Critical" style={{ marginBottom: '0.5rem' }}>
           {lockError}
         </MessageStrip>
       )}

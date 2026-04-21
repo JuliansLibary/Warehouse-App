@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import {
   Title,
   List,
-  StandardListItem,
+  ListItemStandard,
   Dialog,
   Button,
   MessageStrip,
@@ -124,7 +124,7 @@ export function LaunchpadPage() {
       </div>
 
       {!selectedTenantId && (
-        <MessageStrip design="Warning" style={{ marginBottom: '1rem' }}>
+        <MessageStrip design="Critical" style={{ marginBottom: '1rem' }}>
           Bitte wählen Sie einen Mandanten aus, um fortzufahren.
         </MessageStrip>
       )}
@@ -147,7 +147,7 @@ export function LaunchpadPage() {
       <Dialog
         open={showTenantDialog}
         headerText="Mandant auswählen"
-        onAfterClose={() => selectedTenantId && setShowTenantDialog(false)}
+        onClose={() => selectedTenantId && setShowTenantDialog(false)}
         footer={
           <Bar endContent={
             selectedTenantId
@@ -160,7 +160,7 @@ export function LaunchpadPage() {
           {tenantsLoading ? (
             <BusyIndicator active text="Mandanten werden geladen…" />
           ) : tenants.length === 0 ? (
-            <MessageStrip design="Warning">
+            <MessageStrip design="Critical">
               Keine Mandanten konfiguriert. Bitte wenden Sie sich an den Administrator.
             </MessageStrip>
           ) : (
@@ -177,7 +177,7 @@ export function LaunchpadPage() {
               }}
             >
               {tenants.map(t => (
-                <StandardListItem
+                <ListItemStandard
                   key={t.id}
                   data-tenant-id={t.id}
                   data-tenant-name={t.name}
@@ -186,7 +186,7 @@ export function LaunchpadPage() {
                   selected={t.id === selectedTenantId}
                 >
                   {t.name}
-                </StandardListItem>
+                </ListItemStandard>
               ))}
             </List>
           )}
@@ -203,7 +203,7 @@ export function LaunchpadPage() {
           {whLoading ? (
             <BusyIndicator active text="Lager werden geladen…" />
           ) : warehouses.length === 0 ? (
-            <MessageStrip design="Warning">
+            <MessageStrip design="Critical">
               Keine Lager gefunden. SAP-Zugangsdaten prüfen oder Lager im SAP anlegen.
             </MessageStrip>
           ) : (
@@ -219,14 +219,14 @@ export function LaunchpadPage() {
               }}
             >
               {warehouses.map((w: any) => (
-                <StandardListItem
+                <ListItemStandard
                   key={w.WarehouseCode}
                   data-code={w.WarehouseCode}
                   data-name={w.WarehouseName}
                   selected={w.WarehouseCode === selectedWarehouseCode}
                 >
                   {w.WarehouseCode} – {w.WarehouseName}
-                </StandardListItem>
+                </ListItemStandard>
               ))}
             </List>
           )}

@@ -280,7 +280,7 @@ function SalesDeliveryDetail() {
         </Button>
       </Toolbar>
 
-      {lockError && <MessageStrip design="Warning" style={{ marginBottom: '0.5rem' }}>{lockError}</MessageStrip>}
+      {lockError && <MessageStrip design="Critical" style={{ marginBottom: '0.5rem' }}>{lockError}</MessageStrip>}
       {message && <MessageStrip design={message.type} onClose={() => setMessage(null)} style={{ marginBottom: '0.5rem' }}>{message.text}</MessageStrip>}
 
       <div style={{ padding: '0.5rem 0 1rem', color: 'var(--sapTextColor)' }}>

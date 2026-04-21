@@ -29,7 +29,7 @@ export default function App() {
   if (isLoading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-        <BusyIndicator active size="Large" text="Loading Warehouse App..." />
+        <BusyIndicator active size="L" text="Loading Warehouse App..." />
       </div>
     );
   }

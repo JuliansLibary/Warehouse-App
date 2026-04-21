@@ -176,7 +176,7 @@ function InventoryCountDetail() {
         <Button design="Emphasized" icon="save" onClick={handleSave}>Speichern</Button>
       </Toolbar>
 
-      {lockError && <MessageStrip design="Warning" style={{ marginBottom: '0.5rem' }}>{lockError}</MessageStrip>}
+      {lockError && <MessageStrip design="Critical" style={{ marginBottom: '0.5rem' }}>{lockError}</MessageStrip>}
       {message && <MessageStrip design={message.type} onClose={() => setMessage(null)} style={{ marginBottom: '0.5rem' }}>{message.text}</MessageStrip>}
 
       <div style={{ display: 'flex', gap: '0.5rem', padding: '1rem', background: 'var(--sapGroup_TitleBackground)', borderRadius: '0.25rem', marginBottom: '1rem' }}>
